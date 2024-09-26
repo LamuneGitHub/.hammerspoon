@@ -1,0 +1,54 @@
+{
+	"files": [
+		{
+			"path": "lamune_Modifier.lua",
+			"bookmarks": [
+				{
+					"line": 91,
+					"column": 39,
+					"label": ""
+				},
+				{
+					"line": 158,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 193,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 261,
+					"column": 4,
+					"label": ""
+				},
+				{
+					"line": 300,
+					"column": 14,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "lamune_vim.lua",
+			"bookmarks": [
+				{
+					"line": 339,
+					"column": 42,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "lamune_Macro.lua",
+			"bookmarks": [
+				{
+					"line": 38,
+					"column": 4,
+					"label": ""
+				}
+			]
+		}
+	]
+}
