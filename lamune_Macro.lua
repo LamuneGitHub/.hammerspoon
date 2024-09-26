@@ -8,9 +8,9 @@ end)
 
 -- T O D O 입력
 hs.hotkey.bind({"cmd","shift"}, 't', function()
-    hs.eventtap.keyStrokes( "#TODO: ")
+    hs.eventtap.keyStrokes( "#TO")
+    hs.eventtap.keyStrokes( "DO: ")
 end)
-
 
 -------
 
