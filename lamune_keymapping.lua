@@ -63,12 +63,14 @@ hs.hotkey.bind({"cmd","ctrl"},"l",
   nil,
   function() fastKeyStroke({"alt"}, "right") end
 )
+
+-- word backward (shift키로 단어 선택 이동)
 hs.hotkey.bind({"cmd","ctrl","shift"},"h",
   function() fastKeyStroke({"alt","shift"}, "left") end,
   nil,
   function() fastKeyStroke({"alt","shift"}, "left") end
 )
--- word forward
+-- word forward (shift키로 단어 선택 이동)
 hs.hotkey.bind({"cmd","ctrl","shift"},"l",
   function() fastKeyStroke({"alt","shift"}, "right") end,
   nil,
