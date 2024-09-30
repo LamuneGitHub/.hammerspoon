@@ -328,7 +328,7 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
 
     --------------------------------
     -- 상태에 따른 기능 수행
-
+    -- cf: lShift , rShift , lCmd , lCtrl ,lAlt , rCmd , rAlt , fn
     
     -- !shift가 양쪽 모두 눌리는 경우 양쪽 쉬프트키가 (키입력으로써) 무한 반복 입력 되는 문제가 있으으로 
     -- !수정자의 조합으로 이루어진 키에 대한 처리는 이곳에서 처리해야 함
@@ -338,32 +338,34 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
         
         -- 오른쪽 cmd, alt키는 단독을 짧게 누르면 영문/한글 키로 동작
         if curStates.isModifierKeyUsed4NormalKey and keyCode == 54 then
+            -- 한글
+            change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
+            change_kor()
+            change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
+            change_kor()    
+        elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
             -- 영어
             change_eng()
-        elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
-            -- 한글
-            change_kor()
         end
 
         return 
     end
 
-    if isKeyDown then
-        -- cf: lShift , rShift , lCmd , lCtrl ,lAlt , rCmd , rAlt , fn
-        if curStates.lShift and curStates.rCmd then
-            -- 영어
-            change_eng()
-        elseif curStates.lShift and curStates.rAlt then
-            -- 한글
-            change_kor()
-        elseif curStates.lShift and curStates.rShift then
-            -- Vmac 실행
-            vimac()
+    -- if isKeyDown then
+    --     if curStates.lShift and curStates.rCmd then
+    --         -- 영어
+    --         change_eng()
+    --     elseif curStates.lShift and curStates.rAlt then
+    --         -- 한글
+    --         change_kor()
+    --     elseif curStates.lShift and curStates.rShift then
+    --         -- Vmac 실행
+    --         vimac()
 
-            -- change_eng()
-            -- fastKeyStroke(mod.cmd_and_alt, "=")
-        end
-    end
+    --         -- change_eng()
+    --         -- fastKeyStroke(mod.cmd_and_alt, "=")
+    --     end
+    -- end
 
 end)
 modWatcher:start()

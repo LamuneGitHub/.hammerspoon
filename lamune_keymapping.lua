@@ -36,3 +36,41 @@ hs.hotkey.bind({"cmd","ctrl"},"o",
   nil,
   function() fastKeyStroke({}, "forwarddelete") end
 )
+
+-- pagedown 
+hs.hotkey.bind({"cmd","ctrl"},"j",
+  function() fastKeyStroke({}, "pagedown") end,
+  nil,
+  function() fastKeyStroke({}, "pagedown") end
+)
+
+-- pageUp
+hs.hotkey.bind({"cmd","ctrl"},"k",
+  function() fastKeyStroke({}, "pageup") end,
+  nil,
+  function() fastKeyStroke({}, "pageup") end
+)
+
+-- word backward
+hs.hotkey.bind({"cmd","ctrl"},"h",
+  function() fastKeyStroke({"alt"}, "left") end,
+  nil,
+  function() fastKeyStroke({"alt"}, "left") end
+)
+-- word forward
+hs.hotkey.bind({"cmd","ctrl"},"l",
+  function() fastKeyStroke({"alt"}, "right") end,
+  nil,
+  function() fastKeyStroke({"alt"}, "right") end
+)
+hs.hotkey.bind({"cmd","ctrl","shift"},"h",
+  function() fastKeyStroke({"alt","shift"}, "left") end,
+  nil,
+  function() fastKeyStroke({"alt","shift"}, "left") end
+)
+-- word forward
+hs.hotkey.bind({"cmd","ctrl","shift"},"l",
+  function() fastKeyStroke({"alt","shift"}, "right") end,
+  nil,
+  function() fastKeyStroke({"alt","shift"}, "right") end
+)
