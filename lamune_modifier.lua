@@ -117,10 +117,12 @@ function checkDoublePress(event)
 
     -- (PRE) 더블클릭이라면 각 키의 구현
     if keyCode == hs.keycodes.map["a"] then
-        print ( "double" )
+        -- print ( "double" )
+        -- #TODO: 
         return
     elseif keyCode == hs.keycodes.map["b"] then
-        print ( "double" )
+        -- print ( "double" )
+        -- #TODO: 
         return
 
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
@@ -247,7 +249,7 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
     -- How?
     -- 복합키로의 사용 여부 판단은?
     -- 
-    --#TODO: 짧게 눌렀다가 떼어진 것인지(키로 사용된 것인지) 
+    --짧게 눌렀다가 떼어진 것인지(=키로 사용된 것인지) 여부 체크
     -- 길게 눌려지고 있다가 떼어진 것인지(modifier로 사용된 것인지) 여부를 확인하여 기록
     -- KeyUp 일때에 
     local isModifierKeyUsed4NormalKey = false   
@@ -338,14 +340,23 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
         
         -- 오른쪽 cmd, alt키는 단독을 짧게 누르면 영문/한글 키로 동작
         if curStates.isModifierKeyUsed4NormalKey and keyCode == 54 then
-            -- 한글
-            change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
-            change_kor()
-            change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
-            change_kor()    
-        elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
             -- 영어
             change_eng()
+
+        elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
+            -- 한글
+            --change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
+            --change_kor()
+            --change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
+            change_kor()    
+
+        elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 60 
+            and flags.cmd then
+            -- cmd + 오른쪽 shift
+            -- 전체 선택
+            fastKeyStroke(mod.cmd, "a")
+
+
         end
 
         return 

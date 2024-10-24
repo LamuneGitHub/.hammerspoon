@@ -9,6 +9,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "lamune_modifier.lua",
+			"bookmarks": [
+				{
+					"line": 353,
+					"column": 19,
+					"label": ""
+				}
+			]
 		}
 	]
 }

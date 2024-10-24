@@ -12,6 +12,12 @@ hs.hotkey.bind({"cmd","shift"}, 't', function()
     hs.eventtap.keyStrokes( "DO: ")
 end)
 
+
+-- T O D O 입력
+hs.hotkey.bind({"cmd","shift"}, 'space', function()
+    hs.eventtap.keyStrokes( "$\\quad$")
+end)
+
 -------
 
 
