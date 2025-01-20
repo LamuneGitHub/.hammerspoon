@@ -95,3 +95,10 @@ hs.hotkey.bind({"cmd", "ctrl"}, "right", function()
   hs.eventtap.keyStrokes( "⟹")
 end)
 
+hs.hotkey.bind({"cmd", "ctrl"}, ";", function()
+  hs.eventtap.keyStrokes( "∴")
+end)
+
+hs.hotkey.bind({"cmd", "ctrl"}, "'", function()
+  hs.eventtap.keyStrokes( "∵")
+end)
