@@ -76,3 +76,22 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"l",
   nil,
   function() fastKeyStroke({"alt","shift"}, "right") end
 )
+
+
+-- 이모지 
+hs.hotkey.bind({"cmd", "ctrl"}, "up", function()
+  hs.eventtap.keyStrokes( "⬆︎")
+end)
+
+hs.hotkey.bind({"cmd", "ctrl"}, "down", function()
+  hs.eventtap.keyStrokes( "⬇︎")
+end)
+
+hs.hotkey.bind({"cmd", "ctrl"}, "left", function()
+  hs.eventtap.keyStrokes( "⟸")
+end)
+
+hs.hotkey.bind({"cmd", "ctrl"}, "right", function()
+  hs.eventtap.keyStrokes( "⟹")
+end)
+
