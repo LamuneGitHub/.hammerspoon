@@ -156,7 +156,7 @@ download_image = function()
     if isUrl("tumblr") then
         rightMouseClick()
         hs.timer.usleep(0.1 *1000000)
-        hs.eventtap.keyStrokes("download raw image")
+        hs.eventtap.keyStrokes("save image to")
         fastKeyStroke(mod.empty, "return")
 
     elseif isUrl("pixiv") then
@@ -171,7 +171,7 @@ download_image = function()
     else 
         rightMouseClick()
         hs.timer.usleep(5*100000)
-        hs.eventtap.keyStrokes("save image to download")
+        hs.eventtap.keyStrokes("save image to")
         fastKeyStroke(mod.empty, "return")
     end
 
