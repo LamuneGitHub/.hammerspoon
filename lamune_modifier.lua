@@ -153,14 +153,21 @@ function checkDoublePress(event)
 
         return
     elseif keyCode == 60 then
-        -- 오른쪽 shift 더블클릭은 입력중이던 단어 선택/삭제
+        -- 오른쪽 shift 더블클릭시
+        
+        -- :입력중이던 단어 선택
         fastKeyStroke(mod.alt_and_shift, "left")
         -- fastKeyStroke(mod.empty, "delete")
         return
 
     elseif keyCode == 56 then
-        -- 왼쪽 shift 더블클릭은 옵시디언 이미지 수정
-        obsidian_fn02()
+        -- 왼쪽 shift 더블클릭시
+
+        -- :현재 줄 전체 선택
+        fastKeyStroke({"cmd"}, "right")
+        fastKeyStroke({"cmd", "shift"}, "left")
+        fastKeyStroke({"cmd", "shift"}, "left")
+        
         return
 
     end
@@ -338,7 +345,7 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
     -- 특별하게 keyUp시에 시행할 기능 수행
     if isKeyUp then 
         
-        -- 오른쪽 cmd, alt키는 단독을 짧게 누르면 영문/한글 키로 동작
+        -- 오른쪽 cmd, alt키는 단독을 짧게 누르면 영문,한글 키로 동작
         if curStates.isModifierKeyUsed4NormalKey and keyCode == 54 then
             -- 영어
             change_eng()

@@ -31,12 +31,27 @@ hs.hotkey.bind({"cmd","ctrl"},"i",
   function() fastKeyStroke({}, "pageup") end
 )
 
+--  (shift키)
+hs.hotkey.bind({"cmd","ctrl","shift"},"i",
+  function() fastKeyStroke({"shift"}, "pageup") end,
+  nil,
+  function() fastKeyStroke({"shift"}, "pageup") end
+)
+
 -- pagedown 
 hs.hotkey.bind({"cmd","ctrl"},"n",
   function() fastKeyStroke({}, "pagedown") end,
   nil,
   function() fastKeyStroke({}, "pagedown") end
 )
+
+--  (shift키)
+hs.hotkey.bind({"cmd","ctrl","shift"},"n",
+  function() fastKeyStroke({"shift"}, "pagedown") end,
+  nil,
+  function() fastKeyStroke({"shift"}, "pagedown") end
+)
+
 
 ------------------------------------------------------------f--------------------
 
