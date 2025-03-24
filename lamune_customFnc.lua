@@ -138,12 +138,14 @@ obsidian_fn02 = function()
     leftMouseClick()
     -- leftMouseClick()
 
-    -- hs.timer.usleep(100000)
+    hs.timer.usleep(100000)
     hs.eventtap.keyStroke({"cmd"}, "delete")
     hs.eventtap.keyStroke({"cmd"}, "v")
 
     -- local clipboardContent = hs.pasteboard.getContents()
     -- hs.eventtap.keyStrokes(clipboardContent)
+
+    fastKeyStroke({}, "delete")
 end
 
 

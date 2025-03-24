@@ -13,32 +13,54 @@ hs.hotkey.bind({"cmd","shift"}, 't', function()
 end)
 
 
--- T O D O 입력
+-- obsidian space 
 hs.hotkey.bind({"cmd","shift"}, 'space', function()
     hs.eventtap.keyStrokes( "$\\quad$")
 end)
 
--------
+--------------------------------------------------------  
+
+-- 이모지 
+hs.hotkey.bind({"cmd", "shift"}, "k", function()
+    hs.eventtap.keyStrokes( "⬆️")
+  end)
+  
+  hs.hotkey.bind({"cmd", "shift"}, "j", function()
+    hs.eventtap.keyStrokes( "⬇️")
+  end)
+  
+  hs.hotkey.bind({"cmd", "shift"}, "h", function()
+    hs.eventtap.keyStrokes( "⬅️")
+  end)
+  
+  hs.hotkey.bind({"cmd", "shift"}, "l", function()
+    hs.eventtap.keyStrokes( "➡️")
+  end)
+  
+  hs.hotkey.bind({"cmd", "shift"}, ".", function()
+    hs.eventtap.keyStrokes( "∴")
+  end)
+  
+  hs.hotkey.bind({"cmd", "shift"}, ",", function()
+    hs.eventtap.keyStrokes( "∵")
+  end)
 
 
-
-
--------
+---------------------------------------------------------  
+-- 커스텀 기능 호출 단축키
 
 local keyMappings = {
 
-    -- 미정의 키 ( ... )
     {t="fnc", from = {{"cmd", "ctrl", "alt"},"r"}, to = reloadHammerSpoon },
     {t="fnc", from = {{"cmd", "ctrl", "alt"},"i"}, to = runningAppInfo },
 
-    {t="key", from = {{"cmd", "shift"},"i"}, to = {{},"delete"} },
-    {t="key", from = {{"cmd", "shift"},"o"}, to = {{},"forwarddelete"} },
 
+    {t="fnc", from = {{"cmd", "shift"},"p"}, to = obsidian_fn01 }, -- 웹 주소 입력
 
-    {t="fnc", from = {{"cmd", "shift"},"p"}, to = obsidian_fn01 }, -- 
-    {t="fnc", from = {{"cmd", "ctrl"},"/"}, to = download_image },
+    {t="fnc", from = {{"cmd", "ctrl"},"/"}, to = download_image }, -- 웹 이미지 다운로드
+    {t="fnc", from = {{"cmd", "ctrl"},"."}, to = obsidian_fn02 }, -- obsidian local 이미지 -> 웹이미지
 
-    -- {t="fnc", from = {{"ctrl", },"z"}, to = obsidian_fn02 },
+    -- {t="fnc", from = {{"ctrl", },"z"}, to = obsdian_fn02 },
     -- {t="key", from = {{ },"a"}, to = {{"cmd"},"v"} },
 
 
