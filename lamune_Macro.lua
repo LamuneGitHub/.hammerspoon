@@ -47,13 +47,10 @@ hs.hotkey.bind({"cmd", "shift"}, "k", function()
 
 
 ---------------------------------------------------------  
--- 커스텀 기능 호출 단축키
-
+-- 단축키 ( 커스텀 기능 호출 )
 local keyMappings = {
-
     {t="fnc", from = {{"cmd", "ctrl", "alt"},"r"}, to = reloadHammerSpoon },
     {t="fnc", from = {{"cmd", "ctrl", "alt"},"i"}, to = runningAppInfo },
-
 
     {t="fnc", from = {{"cmd", "shift"},"p"}, to = obsidian_fn01 }, -- 웹 주소 입력
 
@@ -63,9 +60,6 @@ local keyMappings = {
     -- {t="fnc", from = {{"ctrl", },"z"}, to = obsdian_fn02 },
     -- {t="key", from = {{ },"a"}, to = {{"cmd"},"v"} },
 
-
     -- {t="fnc", from = {{"cmd", "ctrl"},"a"}, to = noAct },
-
-
 }
 loadKeyBinding( keyMappings )

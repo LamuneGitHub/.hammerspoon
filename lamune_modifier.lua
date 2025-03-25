@@ -82,7 +82,8 @@ function checkDoublePress(event)
     end
 
     -- 더블클릭 여부를 확인
-    --! #TODO: 키가 눌린 시점을 기준으로 하면 키가 눌려져 있는 동안에는 계속 이벤트가 반복호출되게 된다.
+    --! #TODO: 키가 눌린 시점을 기준으로 하면 키가 눌려져 있는 동안에는 이벤트가 계속 반복호출이 되어서
+    --! 더블클릭 여부를 제대로 알아낼 수 없는 문제가 생긴다.
     if isKeyUp then return end
 
     -- print( "key press " .. curStates.lastKeyTime .. ' ' .. curStates.lastKeyCode .. ' ' .. keyCode .. '-' .. eventType )
@@ -101,7 +102,6 @@ function checkDoublePress(event)
         return     
     end
 
-
     -- 제한 시간 안에 두번 눌렸는지 여부 확인
     if currentTime - tmp_lastKeyTime > doublePressInterval then 
         -- 키 반복이 아닌경우
@@ -118,11 +118,11 @@ function checkDoublePress(event)
     -- (PRE) 더블클릭이라면 각 키의 구현
     if keyCode == hs.keycodes.map["a"] then
         -- print ( "double" )
-        -- #TODO: 
+        --TODO: 필요한 기능 추가
         return
     elseif keyCode == hs.keycodes.map["b"] then
         -- print ( "double" )
-        -- #TODO: 
+        --TODO: 필요한 기능 추가
         return
 
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
@@ -131,9 +131,11 @@ function checkDoublePress(event)
     elseif keyCode == 54 then
         -- (pre) 오른쪽 cmd 더블클릭
     
-        if curStates.lShift == true then 
-            -- 왼쪽 shift가 눌려 있다면 창크기복원
-            restoreMinimizedWindow()
+        if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
+            -- lCmd & lAlt & lCtrl 가 눌려 있으면
+            --TODO: 필요한 기능 추가
+        elseif curStates.lShift == true then     
+            --TODO: 필요한 기능 추가
         else 
             -- 단독으로 더블클릭이라면 영어     
             change_eng()
@@ -143,9 +145,12 @@ function checkDoublePress(event)
     elseif keyCode == 61 then
         -- (pre) 오른쪽 alt 더블클릭
 
-        if curStates.lShift == true then 
-            -- 왼쪽 shift가 눌려 있다면 창크기복원
-            minimizeActiveWindow()
+        if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
+            -- lCmd & lAlt & lCtrl 가 눌려 있으면
+            -- 최소화된 창 복원
+            restoreMinimizedWindow()
+        elseif curStates.lShift == true then 
+            --TODO: 필요한 기능 추가
         else 
             -- 단독으로 더블클릭이라면 한글 
             change_kor()
@@ -180,16 +185,7 @@ keyDown_checkDoublePress:start()
 flagsChanged_checkDoublePress  = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, checkDoublePress):start()
 flagsChanged_checkDoublePress:start()
 
-
-
 --------------------------------------------------------------------------------
-
-
-
-
-
-
-
 --------------------------------------------------------------------------------
 --#TODO: 
 -- local modifler_detail_map = {

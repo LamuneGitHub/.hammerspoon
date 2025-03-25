@@ -116,5 +116,3 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"k",
 
 
 
-
-

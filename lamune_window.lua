@@ -104,7 +104,7 @@ end
 
 
 -- 활성 창 최소화
-function minimizeActiveWindow()
+minimizeActiveWindow = function()
     local app = hs.application.frontmostApplication()
     hide_Stack:push(app:name())
     -- lastAppName = app:name()
@@ -118,3 +118,20 @@ restoreMinimizedWindow = function()
         toggleApplication(lastAppName)
     end
 end
+
+
+------------------------------------------------------------f--------------------
+--단축키 맵핑
+
+-- 전체 화면 
+hs.hotkey.bind({"cmd","alt","ctrl"},"up",
+  function() fastKeyStroke({"cmd","ctrl"}, "f") end,
+  nil,
+  function() fastKeyStroke({"cmd","ctrl"}, "f") end
+)
+
+
+local keyMappings = {
+    {t="fnc", from = {{"cmd", "alt", "ctrl"},"down"}, to = minimizeActiveWindow }, -- 최소화
+}
+loadKeyBinding( keyMappings )
