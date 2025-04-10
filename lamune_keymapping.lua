@@ -1,21 +1,36 @@
 ------------------------------------------------------------f--------------------
 -- 이동 , 삭제 편의 기능 
 
--- delete
-hs.hotkey.bind({"cmd","ctrl"},"[", 
+-- delete ⬅️
+hs.hotkey.bind({"cmd","shift"},"[", 
   function() fastKeyStroke({}, "delete") end,
   nil,
   function() fastKeyStroke({}, "delete") end
 )
 
--- forwarddelete
-hs.hotkey.bind({"cmd","ctrl"},"]",
+-- delete ⬅️
+hs.hotkey.bind({"cmd","shift"},"o", 
+  function() fastKeyStroke({}, "delete") end,
+  nil,
+  function() fastKeyStroke({}, "delete") end
+)
+
+-- forwarddelete ➡️
+hs.hotkey.bind({"cmd","shift"},"]",
   function() fastKeyStroke({}, "forwarddelete") end,
   nil,
   function() fastKeyStroke({}, "forwarddelete") end
 )
 
--- forwarddelete
+-- forwarddelete ➡️
+hs.hotkey.bind({"cmd","shift"},"p",
+  function() fastKeyStroke({}, "forwarddelete") end,
+  nil,
+  function() fastKeyStroke({}, "forwarddelete") end
+)
+
+
+-- forwarddelete ➡️
 hs.hotkey.bind({"shift"},"delete", 
   function() fastKeyStroke({}, "forwarddelete") end,
   nil,
@@ -25,7 +40,7 @@ hs.hotkey.bind({"shift"},"delete",
 ------------------------------------------------------------f--------------------
 
 -- pageUp
-hs.hotkey.bind({"cmd","ctrl"},"i",
+hs.hotkey.bind({"cmd","shift"},"i",
   function() fastKeyStroke({}, "pageup") end,
   nil,
   function() fastKeyStroke({}, "pageup") end
@@ -39,7 +54,7 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"i",
 )
 
 -- pagedown 
-hs.hotkey.bind({"cmd","ctrl"},"n",
+hs.hotkey.bind({"cmd","shift"},"n",
   function() fastKeyStroke({}, "pagedown") end,
   nil,
   function() fastKeyStroke({}, "pagedown") end
@@ -56,7 +71,7 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"n",
 ------------------------------------------------------------f--------------------
 
 -- word backward
-hs.hotkey.bind({"cmd","ctrl"},"h",
+hs.hotkey.bind({"cmd","shift"},"h",
   function() fastKeyStroke({"alt"}, "left") end,
   nil,
   function() fastKeyStroke({"alt"}, "left") end
@@ -70,7 +85,7 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"h",
 )
 
 -- word forward
-hs.hotkey.bind({"cmd","ctrl"},"l",
+hs.hotkey.bind({"cmd","shift"},"l",
   function() fastKeyStroke({"alt"}, "right") end,
   nil,
   function() fastKeyStroke({"alt"}, "right") end
@@ -86,7 +101,7 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"l",
 ------------------------------------------------------------f--------------------
 
 -- down 
-hs.hotkey.bind({"cmd","ctrl"},"j",
+hs.hotkey.bind({"cmd","shift"},"j",
   function() fastKeyStroke({}, "down") end,
   nil,
   function() fastKeyStroke({}, "down") end
@@ -101,7 +116,7 @@ hs.hotkey.bind({"cmd","ctrl","shift"},"j",
 
 
 -- up
-hs.hotkey.bind({"cmd","ctrl"},"k",
+hs.hotkey.bind({"cmd","shift"},"k",
   function() fastKeyStroke({}, "up") end,
   nil,
   function() fastKeyStroke({}, "up") end

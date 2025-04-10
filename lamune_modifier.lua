@@ -160,19 +160,19 @@ function checkDoublePress(event)
     elseif keyCode == 60 then
         -- 오른쪽 shift 더블클릭시
         
-        -- :입력중이던 단어 선택
-        fastKeyStroke(mod.alt_and_shift, "left")
-        -- fastKeyStroke(mod.empty, "delete")
-        return
-
-    elseif keyCode == 56 then
-        -- 왼쪽 shift 더블클릭시
-
         -- :현재 줄 전체 선택
         fastKeyStroke({"cmd"}, "right")
         fastKeyStroke({"cmd", "shift"}, "left")
         fastKeyStroke({"cmd", "shift"}, "left")
         
+        return
+
+    elseif keyCode == 56 then
+        -- 왼쪽 shift 더블클릭시
+
+        -- :입력중이던 단어 선택
+        fastKeyStroke(mod.alt_and_shift, "left")
+        -- fastKeyStroke(mod.empty, "delete")
         return
 
     end

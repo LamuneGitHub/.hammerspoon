@@ -21,27 +21,27 @@ end)
 --------------------------------------------------------  
 
 -- 이모지 
-hs.hotkey.bind({"cmd", "shift"}, "k", function()
+hs.hotkey.bind({"cmd", "shift", "ctrl"}, "k", function()
     hs.eventtap.keyStrokes( "⬆️")
   end)
   
-  hs.hotkey.bind({"cmd", "shift"}, "j", function()
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "j", function()
     hs.eventtap.keyStrokes( "⬇️")
   end)
   
-  hs.hotkey.bind({"cmd", "shift"}, "h", function()
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "h", function()
     hs.eventtap.keyStrokes( "⬅️")
   end)
   
-  hs.hotkey.bind({"cmd", "shift"}, "l", function()
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "l", function()
     hs.eventtap.keyStrokes( "➡️")
   end)
   
-  hs.hotkey.bind({"cmd", "shift"}, ".", function()
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, ".", function()
     hs.eventtap.keyStrokes( "∴")
   end)
   
-  hs.hotkey.bind({"cmd", "shift"}, ",", function()
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, ",", function()
     hs.eventtap.keyStrokes( "∵")
   end)
 
