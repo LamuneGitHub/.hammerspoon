@@ -45,6 +45,18 @@ hs.hotkey.bind({"cmd", "shift", "ctrl"}, "k", function()
     hs.eventtap.keyStrokes( "∵")
   end)
 
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "1", function()
+    hs.eventtap.keyStrokes( "❗️")
+  end)
+
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "/", function()
+    hs.eventtap.keyStrokes( "❓")
+  end)
+
+  hs.hotkey.bind({"cmd", "shift", "ctrl"}, "=", function()
+    hs.eventtap.keyStrokes( "≒")
+  end)
+
 
 ---------------------------------------------------------  
 -- 단축키 ( 커스텀 기능 호출 )

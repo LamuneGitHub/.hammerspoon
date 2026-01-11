@@ -345,19 +345,21 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
         if curStates.isModifierKeyUsed4NormalKey and keyCode == 54 then
             -- 영어
             change_eng()
-
+            fastKeyStroke({},"F19")
+            
         elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
             -- 한글
             --change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
             --change_kor()
             --change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
-            change_kor()    
+            change_kor()
+            fastKeyStroke({},"F20")
 
         elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 60 
             and flags.cmd then
             -- cmd + 오른쪽 shift
             -- 전체 선택
-            fastKeyStroke(mod.cmd, "a")
+            --fastKeyStroke(mod.cmd, "a")
 
 
         end

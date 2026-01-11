@@ -95,10 +95,11 @@ local change_lang = function()
     end
 end
 
--- shift + space 
-hs.hotkey.bind({"shift"}, 'space', function()
-    change_lang()
-end)
+-- TODO  임시로 막아 놓음 
+-- -- shift + space 
+-- hs.hotkey.bind({"shift"}, 'space', function()
+--     change_lang()
+-- end)
 
 -- hs.hotkey.bind({}, "f17", change_eng)
 -- hs.hotkey.bind({}, "f18", change_kor)
