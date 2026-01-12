@@ -106,6 +106,35 @@ insert_cur_line = function()
     fastKeyStroke(mod.empty, "up")
 end
 
+-- 현재 마우스 위치를 클립보드에 저장
+copyMousePosition = function()
+    local mousePos = hs.mouse.absolutePosition()
+    local frontWin = hs.window.frontmostWindow()
+    
+    if not frontWin then
+        hs.pasteboard.setContents("No frontmost window found.")
+        return
+    end
+    
+    -- 반올림하여 정수 변환
+    local absX = math.floor(mousePos.x + 0.5)
+    local absY = math.floor(mousePos.y + 0.5)
+    
+    local winFrame = frontWin:frame()
+    local relX = math.floor((mousePos.x - winFrame.x) + 0.5)
+    local relY = math.floor((mousePos.y - winFrame.y) + 0.5)
+    
+    local text = string.format(
+        "(Abs: %d , %d Rel: %d , %d)",
+        absX, absY,
+        relX, relY
+    )
+
+    hs.pasteboard.setContents(text)
+    hs.alert.show("Mouse position copied to clipboard!")
+end
+
+
 
 --------------------------------------------------------    
 -- 옵시디언 활용
