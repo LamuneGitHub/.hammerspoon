@@ -56,6 +56,9 @@ change_eng = function()
 
     -- bar  -- 영문 상태를 표시
     -- enable_munebar_show(GREEN)
+
+    -- 페러럴 용 한영키 변경
+    fastKeyStroke({},"F19")
 end
 
 -- 커서모드 변경 없이 영문으로 변경
@@ -78,6 +81,9 @@ change_kor = function()
 
     -- bar  -- 한글 상태를 표시
     enable_munebar_show(BLUE)
+
+    -- 페러럴 용 한영키 변경
+    fastKeyStroke({},"F20")
 end
 
 -- 언어를 변경 

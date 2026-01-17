@@ -63,7 +63,7 @@ end
 -- 키 더블 클릭 감지 
 
 -- todo 62키는 무엇 ? capslock = 0 ? 맞나?
--- 더블 프레스를 감지하는 함수
+-- 더블 클릭 여부를 감지하는 함수
 function checkDoublePress(event)
     -- print ( "checkDoublePress" )
 
@@ -202,9 +202,10 @@ flagsChanged_checkDoublePress:start()
 --     tmp_curStates.rAlt          = flags.alt         and keyCode == 61 or false
 -- }
 
--- Modifier(수정자) 키 이벤트 발생시 현재 modifier의 상태를 왼쪽/오른쪽 여부로 분리하여 상세 관리
+-- Modifier(수정자) 키 이벤트 발생시 현재 modifier의 상태를 왼쪽/오른쪽 여부로 분리하여 
+-- 기능을 상세하게 하드코딩으로 정의
 -- ! 늦게 등록된 이벤트가 먼저 실행되고 있다. 
--- ! 더블클릭 여부 감지 보다 먼저 실행되어야 한다.
+-- ! 더블클릭 여부 감지 보다 먼저 실행되어야 함
 modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(event)
     local flags = event:getFlags()
     local keyCode = event:getKeyCode()
@@ -248,13 +249,17 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
     local isKeyDown = not isKeyUp
 
 
-    -- 키로서 사용된 것인지 아니면 modifier사용된 것인지 구별
+    -- Modifier키가 
+    --      특정 기능키의 용도로서 사용된 것인지
+    --      아니면 modifier의 용도로 사용된 것인지 
+    -- 구별 할 수 있어야 함
     -- How?
     -- 복합키로의 사용 여부 판단은?
     -- 
-    --짧게 눌렀다가 떼어진 것인지(=키로 사용된 것인지) 여부 체크
-    -- 길게 눌려지고 있다가 떼어진 것인지(modifier로 사용된 것인지) 여부를 확인하여 기록
-    -- KeyUp 일때에 
+    --짧게 눌렀다가 떼어진 것인지(=키로 사용된 것인지) 여부를 체크 하여
+    --      길게 눌려지고 있다가 떼어진 것이면 (modifier용도로 사용된 것으로~) 간주할 수 있음
+    --
+    -- (KeyUp 일때에만 체크 가능함)
     local isModifierKeyUsed4NormalKey = false   
     local currentTime = hs.timer.secondsSinceEpoch() 
     if isKeyUp then
@@ -345,7 +350,6 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
         if curStates.isModifierKeyUsed4NormalKey and keyCode == 54 then
             -- 영어
             change_eng()
-            fastKeyStroke({},"F19")
             
         elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 61 then
             -- 한글
@@ -353,7 +357,6 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
             --change_kor()
             --change_eng()-- 가끔 한글로 바뀌었다고 나오지만 실제로는 한글로 안 바뀌는 경우에 영문키를 다시 눌러주고서 다시 한글로 바꾸면 잘 되었음
             change_kor()
-            fastKeyStroke({},"F20")
 
         elseif curStates.isModifierKeyUsed4NormalKey and keyCode == 60 
             and flags.cmd then
