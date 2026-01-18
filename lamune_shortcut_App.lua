@@ -4,16 +4,15 @@
 local appKeyBindings = {
     -- 기능별 할당
     {t="app", from = {{'cmd','alt'},"1"},       to = "Google Chrome" },     -- internet Browser
-    {t="app", from = {{'cmd','alt'},"2"},       to = "Spark" },             -- Email postoffice 
-    {t="app", from = {{'cmd','alt'},"3"},       to = "Microsoft To Do" },   -- TO DO 할일 
-    {t="app", from = {{'cmd','alt'},"4"},       to = "Obsidian" },          -- info Manager
-    
+    {t="app", from = {{'cmd','alt'},"2"},       to = "Microsoft To Do" },   -- TO DO 할일 
+    {t="app", from = {{'cmd','alt'},"3"},       to = "Obsidian" },          -- info Manager
+    {t="app", from = {{'cmd','alt'},"4"},       to = "Spark" },             -- Email postoffice 
     {t="app", from = {{'cmd','alt'},"5"},       to = "qView" },             -- 이미지 뷰어
+
 
     {t="app", from = {{'cmd','alt'},"9"},       to = "iTerm" },             -- Terminer
     {t="app", from = {{'cmd','alt'},"0"},       to = "Finder" },            -- finder
     
-
 
     ---- space 조합
     {t="app", from = {{'cmd','alt'},"space"},   to = "Perplexity" },           -- AI
@@ -22,10 +21,7 @@ local appKeyBindings = {
     -- 이름 앞자리로 할당
  
     
-    
-    
     -- 키보드 위치로 할당
-    
     {t="app", from = {{'cmd','alt'},"/"},       to = "ForkLift" },         -- File manage 
     
     
@@ -44,6 +40,8 @@ local appKeyBindings = {
     -- {t="app", from = {{'cmd','alt'},"k"},       to = "None" },             -- None   vscode bookmark short key
     -- {t="app", from = {{'cmd','alt'},"l"},       to = "None" },             -- None   vscode bookmark short key
         {t="app", from = {{'cmd','alt'},"m"},       to = "SimpleMind" },        -- Mind map 
+        
+    {t="app", from = {{'cmd','alt'},"m"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"n"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"o"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"p"},       to = "None" },             -- None

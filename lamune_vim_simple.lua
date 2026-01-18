@@ -2,48 +2,66 @@ curStates.cursorMode = false
 local activeBindings = {}
 
 -------------------------------------------------------------------------
---- 복합키 정의 
-
-
--------------------------------------------------------------------------
--- 단일 키 맵핑
-
+-- 단일 키 맵핑 설정
 -- Key mappings for cursor mode
 local keyMappings = {
+
+    {t="key", from = {{},"n"}, to = {{},"pageup"}},
+    {t="key", from = {{},"m"}, to = {{},"pagedown"}},
+    {t="key", from = {{},"u"}, to = {{},"home"}},
+    {t="key", from = {{},"o"}, to = {{},"end"}},
+    --{t="key", from = {{},"h"}, to = {{"cmd"}, "left"}}, -- beginning of line
+    --{t="key", from = {{},";"}, to = {{"cmd"}, "right"}}, -- end of line
+
+    {t="key", from = {{"shift"},"n"}, to = {{"shift"},"pageup"}},
+    {t="key", from = {{"shift"},"m"}, to = {{"shift"},"pagedown"}},
+    {t="key", from = {{"shift"},"u"}, to = {{"shift"},"home"}},
+    {t="key", from = {{"shift"},"o"}, to = {{"shift"},"end"}},
+    --{t="key", from = {{"shift"},"h"}, to = {{"shift","cmd"}, "left"}}, -- beginning of line
+    --{t="key", from = {{"shift"},";"}, to = {{"shift","cmd"}, "right"}}, -- end of line
+
+    {t="key", from = {{"cmd"},"n"}, to = {{"cmd"},"pageup"}},
+    {t="key", from = {{"cmd"},"m"}, to = {{"cmd"},"pagedown"}},
+    {t="key", from = {{"cmd"},"u"}, to = {{"cmd"},"home"}},
+    {t="key", from = {{"cmd"},"o"}, to = {{"cmd"},"end"}},
+
+    -------------------------------------------------------------------------
+    {t="fnc", from = {{},"p"}, to = insert_cur_line},  -- 현재 줄에 클립보드 내용 삽입
+
+    {t="key", from = {{},"["}, to = {{},"delete"}},         -- delete ⬅️
+    {t="key", from = {{},"]"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
+    
+    {t="fnc", from = {{},"\\"}, to = function() -- 한줄 복사
+        fastKeyStroke(mod.cmd, "right") 
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd, "c") 
+    end}, 
+
+    {t="fnc", from = {{"cmd","shift"},"\\"}, to = function() -- 한줄 잘라내기
+        fastKeyStroke(mod.cmd, "right") 
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd, "x") 
+    end}, 
+
+    -------------------------------------------------------------------------
 
     {t="key", from = {{},"j"}, to = {{},"left"}},
     {t="key", from = {{},"l"}, to = {{},"right"}},
     {t="key", from = {{},"i"}, to = {{},"up"}},
     {t="key", from = {{},"k"}, to = {{},"down"}},
-    {t="key", from = {{},"n"}, to = {{"alt"}, "left"}}, -- back word
-    {t="key", from = {{},"m"}, to = {{"alt"}, "right"}}, -- forward word  
+    {t="key", from = {{},"h"}, to = {{"alt"}, "left"}}, -- back word
+    {t="key", from = {{},";"}, to = {{"alt"}, "right"}}, -- forward word  
 
-    -------------------------------------------------------------------------
     {t="key", from = {{"shift"},"j"}, to = {{"shift"},"left"}},
     {t="key", from = {{"shift"},"l"}, to = {{"shift"},"right"}},
     {t="key", from = {{"shift"},"i"}, to = {{"shift"},"up"}},
     {t="key", from = {{"shift"},"k"}, to = {{"shift"},"down"}},
-    {t="key", from = {{"shift"},"n"}, to = {{"shift","alt"}, "left"}}, -- back word
-    {t="key", from = {{"shift"},"m"}, to = {{"shift","alt"}, "right"}}, -- forward word  
+    {t="key", from = {{"shift"},"h"}, to = {{"shift","alt"}, "left"}}, -- back word
+    {t="key", from = {{"shift"},";"}, to = {{"shift","alt"}, "right"}}, -- forward word  
 
     -------------------------------------------------------------------------
-    {t="key", from = {{},"u"}, to = {{},"pageup"}},
-    {t="key", from = {{},"o"}, to = {{},"pagedown"}},
-    {t="key", from = {{},"9"}, to = {{},"home"}},
-    {t="key", from = {{},"0"}, to = {{},"end"}},
-    {t="key", from = {{},"h"}, to = {{"cmd"}, "left"}}, -- beginning of line
-    {t="key", from = {{},";"}, to = {{"cmd"}, "right"}}, -- end of line
-
-    {t="key", from = {{"shift"},"u"}, to = {{"shift"},"pageup"}},
-    {t="key", from = {{"shift"},"o"}, to = {{"shift"},"pagedown"}},
-    {t="key", from = {{"shift"},"9"}, to = {{"shift"},"home"}},
-    {t="key", from = {{"shift"},"0"}, to = {{"shift"},"end"}},
-    {t="key", from = {{"shift"},"h"}, to = {{"shift","cmd"}, "left"}}, -- beginning of line
-    {t="key", from = {{"shift"},";"}, to = {{"shift","cmd"}, "right"}}, -- end of line
-
-    -------------------------------------------------------------------------
+    
     {t="key", from = {{"cmd"},"n"}, to = {{},"0"}},
-
     {t="key", from = {{"cmd"},"m"}, to = {{},"1"}},
     {t="key", from = {{"cmd"},","}, to = {{},"2"}},
     {t="key", from = {{"cmd"},"."}, to = {{},"3"}},
@@ -56,6 +74,11 @@ local keyMappings = {
 
 }
 
+
+
+------------------------------------------------------------------------
+-- vim 모드 토클
+
 local function loadMode()
     -- print ( "loadMode"  )
 
@@ -67,12 +90,7 @@ local function loadMode()
 
 end
 
-
-
-
--------------------------------------------------------------------------
--- 커서 모드 실행/해제/전환
-
+-- Function to enable cursor mode key mappings
 function enableCursorMode()
     curStates.cursorMode = true
 

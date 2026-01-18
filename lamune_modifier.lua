@@ -115,7 +115,9 @@ function checkDoublePress(event)
     curStates.sameKeyPressCount = curStates.sameKeyPressCount + 1
     -- print (curStates.sameKeyPressCount)
 
-    -- (PRE) 더블클릭이라면 각 키의 구현
+    --------------------------------------------------------------------------------
+    -- (TODO) 더블클릭이라면 각 키의 구현
+
     if keyCode == hs.keycodes.map["a"] then
         -- print ( "double" )
         --TODO: 필요한 기능 추가
@@ -128,7 +130,7 @@ function checkDoublePress(event)
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
     -- curStates.rAlt = flags.alt and keyCode == 61 or false
     -- curStates.rShift = flags.shift and keyCode == 60 or false
-    elseif keyCode == 54 then
+    elseif keyCode == 54 then   -- rCmd
         -- (pre) 오른쪽 cmd 더블클릭
     
         if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
@@ -142,7 +144,7 @@ function checkDoublePress(event)
         end
 
         return
-    elseif keyCode == 61 then
+    elseif keyCode == 61 then   -- rAlt
         -- (pre) 오른쪽 alt 더블클릭
 
         if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
@@ -157,25 +159,25 @@ function checkDoublePress(event)
         end
 
         return
-    elseif keyCode == 60 then
+    elseif keyCode == 60 then   -- rShift
         -- 오른쪽 shift 더블클릭시
         
-        -- :현재 줄 전체 선택
-        fastKeyStroke({"cmd"}, "right")
-        fastKeyStroke({"cmd", "shift"}, "left")
-        fastKeyStroke({"cmd", "shift"}, "left")
-        
+        -- :현재 단어 전체 선택
+        fastKeyStroke({"ctrl", "shift"}, "right")
         return
 
-    elseif keyCode == 56 then
+    elseif keyCode == 56 then   -- lShift
         -- 왼쪽 shift 더블클릭시
 
-        -- :입력중이던 단어 선택
+        -- :입력중이던 커서 위치부터 앞으로 단어 단위 선택
         fastKeyStroke(mod.alt_and_shift, "left")
         -- fastKeyStroke(mod.empty, "delete")
         return
 
     end
+
+    -- (TODO) 더블클릭이라면 각 키의 구현
+    --------------------------------------------------------------------------------
 
 end
 
@@ -315,7 +317,7 @@ modWatcher = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(ev
         curStates.rCmd              = curStates.rCmd    or tmp_curStates.rCmd   
         curStates.rAlt              = curStates.rAlt    or tmp_curStates.rAlt   
     else 
-        -- 키가 떼어진 경우라면 상태를 빼서 현재 상태의 값을 구한다.
+        -- 키가 떼어진 경우라면 상태를 빼서 현재 상태의 값을 다시 계산한다.
         tmp_curStates = {}
         tmp_curStates.lShift        = keyCode ~= 56 or false
         tmp_curStates.rShift        = keyCode ~= 60 or false
