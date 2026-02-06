@@ -19,8 +19,8 @@ local keyMappings = {
 
     {t="key", from = {{},"y"}, to = {{},"+"}},
     {t="key", from = {{},"h"}, to = {{},"-"}},
-    {t="key", from = {{},"t"}, to = {{},"*"}},
-    {t="key", from = {{},"g"}, to = {{},"/"}},
+    {t="key", from = {{},"["}, to = {{},"*"}},
+    {t="key", from = {{},"'"}, to = {{},"/"}},
 
     {t="key", from = {{},";"}, to = {{},"delete"}},         -- delete ⬅️
     {t="key", from = {{},"'"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
