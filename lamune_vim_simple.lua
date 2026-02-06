@@ -28,8 +28,10 @@ local keyMappings = {
     -------------------------------------------------------------------------
 
 
-
-    {t="fnc", from = {{},"p"}, to = function() -- ctrl + v 
+    {t="fnc", from = {{},"p"}, to = function() -- ctrl + c
+        fastKeyStroke(mod.cmd, "c") 
+    end}, 
+    {t="fnc", from = {{"shift"},"p"}, to = function() -- ctrl + v 
         fastKeyStroke(mod.cmd, "v") 
     end}, 
 
@@ -42,50 +44,67 @@ local keyMappings = {
     --{t="key", from = {{},"v"}, to = {{"cmd"},"v"}},         -- cmd + z --> 동작안함
 
     
-    -------------------------------------------------------------------------
+    ------------------------------------------------------------------------
 
-    {t="fnc", from = {{},"b"}, to = function() -- 줄 복제
-        fastKeyStroke({}, "home")
-        fastKeyStroke({"shift"}, "end")
-        fastKeyStroke("cmd", "c")
-        fastKeyStroke({}, "end")
-        fastKeyStroke({}, "return")
-
-        -- todo 붙여 넣기 하고
-        -- 아래로 이동
-    end}, 
-    {t="fnc", from = {{},"."}, to = function() -- 새로운 라인
-        
-        fastKeyStroke({}, "end")
-        fastKeyStroke({}, "return")
-    end}, 
-    {t="fnc", from = {{"shift"},"."}, to = function() -- 한줄 복사
+    
+    {t="fnc", from = {{},"."}, to = function() -- 한줄 복사
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
         fastKeyStroke(mod.cmd, "c") 
     end}, 
-    {t="fnc", from = {{"cmd","shift"},"."}, to = insert_cur_line},  -- 현재 줄에 클립보드 삽입
-    ---------
+    {t="fnc", from = {{"shift"},"."}, to = insert_cur_line},  -- 현재 줄에 클립보드 삽입
+    -- cmd . => 숫자 3
+    {t="fnc", from = {{"cmd","shift"},"."}, to = function() -- 줄 복제
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd_and_shift, "left") 
+        fastKeyStroke(mod.cmd, "right") 
+        fastKeyStroke(mod.cmd, "c") 
+        fastKeyStroke("cmd", "v")
+        fastKeyStroke({}, "home")
+    end}, 
+
+    {t="fnc", from = {{"cmd","alt"},"."}, to = function() -- 새로운 라인
+        fastKeyStroke({}, "end")
+        fastKeyStroke({}, "return")
+    end}, 
+
+-------------------------------------------------------------------------
+    {t="fnc", from = {{},"/"}, to = function() -- 한줄 삭제
+        fastKeyStroke({}, "end")
+        fastKeyStroke({"shift"}, "home")
+        fastKeyStroke({"shift"}, "home")
+        fastKeyStroke({}, "forwarddelete")
+        fastKeyStroke({}, "forwarddelete")
+    end}, 
     {t="fnc", from = {{"shift"},"/"}, to = function() -- 한줄 잘라내기
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
         fastKeyStroke(mod.cmd, "x")
     end}, 
-    {t="fnc", from = {{},"/"}, to = function() -- 한줄 삭제
-        fastKeyStroke({}, "end")
-        fastKeyStroke({"shift"}, "home")
-        fastKeyStroke({}, "delete")
-        fastKeyStroke({}, "delete")
-    end}, 
+
     {t="fnc", from = {"cmd","/"}, to = function() -- 한줄 주석
-        fastKeyStroke({}, "end")
         fastKeyStroke({}, "home")
+        fastKeyStroke({}, "home")
+        
         fastKeyStroke({}, "-")
         fastKeyStroke({}, "-")
         fastKeyStroke({}, "end")
         fastKeyStroke({}, "home")
+        
         fastKeyStroke({}, "down")
     end}, 
+    {t="fnc", from = {{"cmd","alt"},"/"}, to = function() -- 한줄 주석 해제
+        fastKeyStroke({}, "home")
+        fastKeyStroke({}, "home")
+        
+        fastKeyStroke({}, "forwarddelete")
+        fastKeyStroke({}, "forwarddelete")
+        
+        fastKeyStroke({}, "down")
+    end}, 
+
     
     -------------------------------------------------------------------------
 
@@ -115,6 +134,7 @@ local keyMappings = {
     {t="key", from = {{"cmd"},"u"}, to = {{},"7"}},
     {t="key", from = {{"cmd"},"i"}, to = {{},"8"}},
     {t="key", from = {{"cmd"},"o"}, to = {{},"9"}},
+
 
     
 }
@@ -164,6 +184,7 @@ end
 local function toggleCursorMode()
     print ( "toggleCursorMode"  )
     -- print( curStates.cursorMode )
+    disableMode_Keypad()
 
     if not curStates.cursorMode then
         enableCursorMode()
@@ -183,6 +204,8 @@ end
 
 -- (PRE) karabiner에서 caplock 를 f13로 사전 맵핑 시켜 놓았음 
 hs.hotkey.bind({}, "f13", toggleCursorMode)
+
+
 
 -- Initialize by disabling cursor mode
 loadMode()

@@ -115,16 +115,17 @@ function checkDoublePress(event)
     curStates.sameKeyPressCount = curStates.sameKeyPressCount + 1
     -- print (curStates.sameKeyPressCount)
 
-    --------------------------------------------------------------------------------
-    -- (TODO) 각 키별로 더블클릭시 할당할 기능 구현 TODO
+--------------------------------------------------------------------------------
+-- (TODO) 각 키별로 더블클릭시 할당할 기능 구현 TODO
     if keyCode == hs.keycodes.map["a"] then
-        -- print ( "double" )
+        print ( "a 키 두번 눌림" )
         --TODO: 필요한 기능 구현
         return
-    elseif keyCode == hs.keycodes.map["b"] then
-        -- print ( "double" )
-        --TODO: 필요한 기능 구현
-        return
+--    elseif keyCode == hs.keycodes.map["b"] then
+--        -- print ( "double" )
+--        --TODO: 필요한 기능 구현
+--        return
+--------------------------------------------------------------------------------
 
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
     -- curStates.rAlt = flags.alt and keyCode == 61 or false
@@ -159,14 +160,24 @@ function checkDoublePress(event)
 
     -- #오른쪽 shift 더블클릭시
     elseif keyCode == 60 then   -- rShift
+
+        -- 일반 입력 모드로 변경
+        disableMode_Keypad()
+        disableCursorMode()
+
         -- :입력중이던 커서 위치부터 앞으로 단어 단위 선택
         fastKeyStroke(mod.alt_and_shift, "left")
         -- fastKeyStroke(mod.empty, "delete")
         return        
     
     -- 왼쪽 shift 더블클릭시
-    elseif keyCode == 56 then   -- lShift        
-    -- :현재 단어 전체 선택
+    elseif keyCode == 56 then   -- lShift      
+        
+        -- 일반 입력 모드로 변경
+        disableMode_Keypad()
+        disableCursorMode()
+        
+        -- :현재 단어 전체 선택
         fastKeyStroke({"ctrl", "shift"}, "right")
         return
     end

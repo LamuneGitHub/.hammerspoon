@@ -120,8 +120,10 @@ end
     --hs.alert.show("1초 지연 후 실행!")
     --hs.eventtap.keyStroke({}, 'return')
 --end)
-function delay(callback)
-  return hs.timer.doAfter(0.1, callback)
+function delay(callback, delay)
+    if delay == nil then delay = 0.1 end
+
+    return hs.timer.doAfter(delay, callback)
 end
 
 -- 0.1초 딜레이 후 엔터 입력
@@ -130,9 +132,12 @@ function delayEnter()
         fastKeyStroke(mod.empty , "return")
     end)
 end
-
-
-
+-- 0.5초 딜레이 후 엔터 입력
+function delayEnter2()
+    delay(function()
+        fastKeyStroke(mod.empty , "return")
+    end, 1)
+end
 
 
 ------------------------------------------------------------------

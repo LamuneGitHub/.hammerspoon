@@ -15,6 +15,9 @@ require('lamune_shortcut_macro')    -- 단축키 지정 : 매크로 기능
 require('lamune_modifier')          -- 세부(왼/오 Modifier/ 다중클릭별) 기능 실행 구현
 
 require('lamune_vim_simple')           -- vim 키보드
+require('lamune_vim_number_keypad')           -- vim 키보드
+
+
 --require('lamune_vim')           -- vim 키보드
 
 
