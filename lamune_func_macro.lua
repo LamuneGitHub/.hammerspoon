@@ -102,8 +102,7 @@ end
 insert_cur_line = function()
     fastKeyStroke(mod.cmd, "left")
     fastKeyStroke(mod.cmd, "v")
-    fastKeyStroke(mod.empty , "return")
-    fastKeyStroke(mod.empty, "up")
+    delayEnter()
 end
 
 -- 현재 마우스 위치를 클립보드에 저장

@@ -6,22 +6,22 @@ local activeBindings = {}
 -- Key mappings for cursor mode
 local keyMappings = {
 
-    {t="key", from = {{},"y"}, to = {{},"pageup"}},
-    {t="key", from = {{},"h"}, to = {{},"pagedown"}},
+    {t="key", from = {{},"["}, to = {{},"pageup"}},
+    {t="key", from = {{},"'"}, to = {{},"pagedown"}},
     {t="key", from = {{},"u"}, to = {{},"home"}},
     {t="key", from = {{},"o"}, to = {{},"end"}},
     --{t="key", from = {{},"h"}, to = {{"cmd"}, "left"}}, -- beginning of line
     --{t="key", from = {{},";"}, to = {{"cmd"}, "right"}}, -- end of line
 
-    {t="key", from = {{"shift"},"y"}, to = {{"shift"},"pageup"}},
-    {t="key", from = {{"shift"},"h"}, to = {{"shift"},"pagedown"}},
+    {t="key", from = {{"shift"},"["}, to = {{"shift"},"pageup"}},
+    {t="key", from = {{"shift"},"'"}, to = {{"shift"},"pagedown"}},
     {t="key", from = {{"shift"},"u"}, to = {{"shift"},"home"}},
     {t="key", from = {{"shift"},"o"}, to = {{"shift"},"end"}},
     --{t="key", from = {{"shift"},"h"}, to = {{"shift","cmd"}, "left"}}, -- beginning of line
     --{t="key", from = {{"shift"},";"}, to = {{"shift","cmd"}, "right"}}, -- end of line
 
-    {t="key", from = {{"cmd"},"y"}, to = {{"cmd"},"pageup"}},
-    {t="key", from = {{"cmd"},"h"}, to = {{"cmd"},"pagedown"}},
+    {t="key", from = {{"cmd"},"["}, to = {{"cmd"},"pageup"}},
+    {t="key", from = {{"cmd"},"'"}, to = {{"cmd"},"pagedown"}},
     {t="key", from = {{"cmd"},"u"}, to = {{"cmd"},"home"}},
     {t="key", from = {{"cmd"},"o"}, to = {{"cmd"},"end"}},
 
@@ -33,15 +33,13 @@ local keyMappings = {
         fastKeyStroke(mod.cmd, "v") 
     end}, 
 
-    {t="key", from = {{},"["}, to = {{},"delete"}},         -- delete ⬅️
-    {t="key", from = {{},"]"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
-    {t="key", from = {{},"'"}, to = {{},"delete"}},         -- delete ⬅️
-    --{t="key", from = {{},"'"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
+    {t="key", from = {{},"]"}, to = {{},"delete"}},         -- delete ⬅️
+    {t="key", from = {{},"\\"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
     
-    {t="key", from = {{},"z"}, to = {{"cmd"},"z"}},         -- cmd + z
-    {t="key", from = {{},"x"}, to = {{"cmd"},"x"}},         -- cmd + z
-    {t="key", from = {{},"c"}, to = {{"cmd"},"c"}},         -- cmd + z
-    {t="key", from = {{},"v"}, to = {{"cmd"},"v"}},         -- cmd + z
+    --{t="key", from = {{},"z"}, to = {{"cmd"},"z"}},         -- cmd + z --> 동작안함
+    --{t="key", from = {{},"x"}, to = {{"cmd"},"x"}},         -- cmd + z --> 동작안함
+    --{t="key", from = {{},"c"}, to = {{"cmd"},"c"}},         -- cmd + z --> 동작안함
+    --{t="key", from = {{},"v"}, to = {{"cmd"},"v"}},         -- cmd + z --> 동작안함
 
     
     -------------------------------------------------------------------------
@@ -56,17 +54,19 @@ local keyMappings = {
         -- todo 붙여 넣기 하고
         -- 아래로 이동
     end}, 
-    {t="fnc", from = {{},"n"}, to = function() -- 새로운 라인
+    {t="fnc", from = {{},"."}, to = function() -- 새로운 라인
+        
         fastKeyStroke({}, "end")
         fastKeyStroke({}, "return")
     end}, 
-    {t="fnc", from = {{},"m"}, to = function() -- 한줄 복사
+    {t="fnc", from = {{"shift"},"."}, to = function() -- 한줄 복사
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
         fastKeyStroke(mod.cmd, "c") 
     end}, 
-    {t="fnc", from = {{},","}, to = insert_cur_line},  -- 클립보드 현재 줄에 삽입
-    {t="fnc", from = {{},"."}, to = function() -- 한줄 잘라내기
+    {t="fnc", from = {{"cmd","shift"},"."}, to = insert_cur_line},  -- 현재 줄에 클립보드 삽입
+    ---------
+    {t="fnc", from = {{"shift"},"/"}, to = function() -- 한줄 잘라내기
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
         fastKeyStroke(mod.cmd, "x")
@@ -77,9 +77,7 @@ local keyMappings = {
         fastKeyStroke({}, "delete")
         fastKeyStroke({}, "delete")
     end}, 
-
-
-    {t="fnc", from = {mod.cmd,"/"}, to = function() -- 한줄 주석
+    {t="fnc", from = {"cmd","/"}, to = function() -- 한줄 주석
         fastKeyStroke({}, "end")
         fastKeyStroke({}, "home")
         fastKeyStroke({}, "-")
@@ -88,7 +86,7 @@ local keyMappings = {
         fastKeyStroke({}, "home")
         fastKeyStroke({}, "down")
     end}, 
-
+    
     -------------------------------------------------------------------------
 
     {t="key", from = {{},"j"}, to = {{},"left"}},
@@ -106,7 +104,7 @@ local keyMappings = {
     {t="key", from = {{"shift"},";"}, to = {{"shift","alt"}, "right"}}, -- forward word  
 
     -------------------------------------------------------------------------
-    
+
     {t="key", from = {{"cmd"},"n"}, to = {{},"0"}},
     {t="key", from = {{"cmd"},"m"}, to = {{},"1"}},
     {t="key", from = {{"cmd"},","}, to = {{},"2"}},
@@ -118,6 +116,7 @@ local keyMappings = {
     {t="key", from = {{"cmd"},"i"}, to = {{},"8"}},
     {t="key", from = {{"cmd"},"o"}, to = {{},"9"}},
 
+    
 }
 
 
@@ -161,7 +160,7 @@ function disableCursorMode()
     end
 end
 
--- Function to toggle cursor mode
+
 local function toggleCursorMode()
     print ( "toggleCursorMode"  )
     -- print( curStates.cursorMode )
@@ -175,6 +174,7 @@ local function toggleCursorMode()
     -- 현재 상태를 메세지 박스로 출력
     alter_CurStates()
 end
+
 
 
 

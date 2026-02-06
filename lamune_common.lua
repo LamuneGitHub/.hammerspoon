@@ -114,8 +114,29 @@ fastKeyStroke = function(modifiers, character , delayTime)
     hs.eventtap.event.newKeyEvent(modifiers, string.lower(character), false):post()
 end
 
-------------------------------------------------------------------
+-- 1초 딜레이 
+-- 사용예 
+--delay1s(function()
+    --hs.alert.show("1초 지연 후 실행!")
+    --hs.eventtap.keyStroke({}, 'return')
+--end)
+function delay(callback)
+  return hs.timer.doAfter(0.1, callback)
+end
 
+-- 0.1초 딜레이 후 엔터 입력
+function delayEnter()
+    delay(function()
+        fastKeyStroke(mod.empty , "return")
+    end)
+end
+
+
+
+
+
+------------------------------------------------------------------
+------------------------------------------------------------------
 -- 키 바인딩 설정tbl 에 따라 키 맵핑
 function loadKeyBinding( configTbl , historyTbl )
     historyTbl = historyTbl or nil
