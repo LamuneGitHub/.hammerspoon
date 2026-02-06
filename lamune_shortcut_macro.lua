@@ -71,6 +71,7 @@ local keyMappings = {
 
     {t="fnc", from = {{"cmd", "ctrl", "alt"},"F11"}, to = copyMousePosition }, -- 현재 마우스 커서 위치를 클립보드에 복사
 
+
     -- {t="fnc", from = {{"ctrl", },"z"}, to = obsdian_fn02 },
     -- {t="key", from = {{ },"a"}, to = {{"cmd"},"v"} },
 

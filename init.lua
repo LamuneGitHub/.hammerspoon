@@ -10,8 +10,7 @@ require('lamune_window')        -- 프로그램 창 제어 기능
 require('lamune_shortcut_App')      -- 단축키 지정 : App 실행
 
 require('lamune_func_macro')       -- 실행하고자 하는 특수 기능들을 정의
-require('lamune_shortcut_macro')    -- 단축키 지정 : 매크로 기능  
-
+require('lamune_shortcut_macro')    -- 단축키 지정 : 매크로 기능 
 
 require('lamune_modifier')          -- 세부(왼/오 Modifier/ 다중클릭별) 기능 실행 구현
 

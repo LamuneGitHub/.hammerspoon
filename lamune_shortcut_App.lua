@@ -32,7 +32,7 @@ local appKeyBindings = {
         {t="app", from = {{'cmd','alt'},"c"},       to = "Code" },              -- Code editor 
         {t="app", from = {{'cmd','alt'},"d"},       to = "DeepL" },             -- 사전
     {t="app", from = {{'cmd','alt'},"e"},       to = "None" },             -- None
-    {t="app", from = {{'cmd','alt'},"f"},       to = "None" },             -- None  
+    --{t="app", from = {{'cmd','alt'},"f"},       to = "None" },             -- None  
     {t="app", from = {{'cmd','alt'},"g"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"h"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"i"},       to = "None" },             -- None
@@ -47,17 +47,17 @@ local appKeyBindings = {
     {t="app", from = {{'cmd','alt'},"p"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"q"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"r"},       to = "None" },             -- None
-        {t="app", from = {{'cmd','alt'},"s"},       to = "Sublime Text" },      -- Txt editor
-    {t="app", from = {{'cmd','alt'},"t"},       to = "None" },             -- None
+    {t="app", from = {{'cmd','alt'},"s"},       to = "None" },             -- None
+        {t="app", from = {{'cmd','alt'},"t"},       to = "Sublime Text" },      -- Txt editor
     {t="app", from = {{'cmd','alt'},"u"},       to = "None" },             -- None
-    {t="app", from = {{'cmd','alt'},"v"},       to = "None" },             -- None   -- find 파일이동
+    --{t="app", from = {{'cmd','alt'},"v"},       to = "None" },             -- None   -- find 파일이동
     {t="app", from = {{'cmd','alt'},"w"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"x"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"y"},       to = "None" },             -- None
     {t="app", from = {{'cmd','alt'},"z"},       to = "None" },             -- None
     
-    
 }
 
 -- 키 바인딩 수행
 loadKeyBinding(appKeyBindings)
+ 

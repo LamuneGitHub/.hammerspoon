@@ -13,6 +13,12 @@ hs.logger.defaultLogLevel = "error"
 hs.hotkey.setLogLevel("nothing")
 
 
+--local eventtap = require("hs.eventtap")
+--local hyper = {"fn", "f6"}  -- Fn+F6 감지 어려움, F18 등 대체 추천
+--hs.hotkey.bind({}, "F18", function()  -- Karabiner로 Fn+F6 → F18 매핑 후
+  --hs.caffeinate.sleepDisplay()
+--end)
+
 ------------------------------------------------------------------
 -- Common 전역변수 정의
 
@@ -107,8 +113,6 @@ fastKeyStroke = function(modifiers, character , delayTime)
     end
     hs.eventtap.event.newKeyEvent(modifiers, string.lower(character), false):post()
 end
-
-
 
 ------------------------------------------------------------------
 

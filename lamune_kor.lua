@@ -57,8 +57,6 @@ change_eng = function()
     -- bar  -- 영문 상태를 표시
     -- enable_munebar_show(GREEN)
 
-    -- 페러럴 용 한영키 변경
-    fastKeyStroke({},"F19")
 end
 
 -- 커서모드 변경 없이 영문으로 변경
@@ -82,8 +80,6 @@ change_kor = function()
     -- bar  -- 한글 상태를 표시
     enable_munebar_show(BLUE)
 
-    -- 페러럴 용 한영키 변경
-    fastKeyStroke({},"F20")
 end
 
 -- 언어를 변경 
@@ -101,11 +97,6 @@ local change_lang = function()
     end
 end
 
--- TODO  임시로 막아 놓음 
--- -- shift + space 
--- hs.hotkey.bind({"shift"}, 'space', function()
---     change_lang()
--- end)
 
 -- hs.hotkey.bind({}, "f17", change_eng)
 -- hs.hotkey.bind({}, "f18", change_kor)
@@ -115,3 +106,16 @@ end
 --hs.keycodes.inputSourceChanged(show_autohide)
 
 
+
+
+-- TODO  임시로 막아 놓음 
+-- -- shift + space 
+--hs.hotkey.bind({"shift"}, "space", function()
+    --toggleCursorMode()
+    --change_eng()
+
+    --change_lang()
+
+    -- 페러럴 용 한영키 변경
+    --fastKeyStroke({},"F19")
+--end)

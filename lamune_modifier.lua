@@ -80,7 +80,7 @@ function checkDoublePress(event)
         -- modifier가 아닌경우에는 정상적으로 keyup여부를 조회
         isKeyUp = eventType == hs.eventtap.event.types.keyUp
     end
-
+    
     -- 더블클릭 여부를 확인
     --! #TODO: 키가 눌린 시점을 기준으로 하면 키가 눌려져 있는 동안에는 이벤트가 계속 반복호출이 되어서
     --! 더블클릭 여부를 제대로 알아낼 수 없는 문제가 생긴다.
@@ -116,23 +116,21 @@ function checkDoublePress(event)
     -- print (curStates.sameKeyPressCount)
 
     --------------------------------------------------------------------------------
-    -- (TODO) 더블클릭이라면 각 키의 구현
-
+    -- (TODO) 각 키별로 더블클릭시 할당할 기능 구현 TODO
     if keyCode == hs.keycodes.map["a"] then
         -- print ( "double" )
-        --TODO: 필요한 기능 추가
+        --TODO: 필요한 기능 구현
         return
     elseif keyCode == hs.keycodes.map["b"] then
         -- print ( "double" )
-        --TODO: 필요한 기능 추가
+        --TODO: 필요한 기능 구현
         return
 
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
     -- curStates.rAlt = flags.alt and keyCode == 61 or false
     -- curStates.rShift = flags.shift and keyCode == 60 or false
+    -- #오른쪽 cmd 더블클릭
     elseif keyCode == 54 then   -- rCmd
-        -- (pre) 오른쪽 cmd 더블클릭
-    
         if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
             -- lCmd & lAlt & lCtrl 가 눌려 있으면
             --TODO: 필요한 기능 추가
@@ -144,9 +142,8 @@ function checkDoublePress(event)
         end
 
         return
+    -- #오른쪽 alt 더블클릭
     elseif keyCode == 61 then   -- rAlt
-        -- (pre) 오른쪽 alt 더블클릭
-
         if curStates.lCmd == true and curStates.lAlt == true and curStates.lCtrl == true then 
             -- lCmd & lAlt & lCtrl 가 눌려 있으면
             -- 최소화된 창 복원
@@ -159,21 +156,19 @@ function checkDoublePress(event)
         end
 
         return
+
+    -- #오른쪽 shift 더블클릭시
     elseif keyCode == 60 then   -- rShift
-        -- 오른쪽 shift 더블클릭시
-        
-        -- :현재 단어 전체 선택
-        fastKeyStroke({"ctrl", "shift"}, "right")
-        return
-
-    elseif keyCode == 56 then   -- lShift
-        -- 왼쪽 shift 더블클릭시
-
         -- :입력중이던 커서 위치부터 앞으로 단어 단위 선택
         fastKeyStroke(mod.alt_and_shift, "left")
         -- fastKeyStroke(mod.empty, "delete")
+        return        
+    
+    -- 왼쪽 shift 더블클릭시
+    elseif keyCode == 56 then   -- lShift        
+    -- :현재 단어 전체 선택
+        fastKeyStroke({"ctrl", "shift"}, "right")
         return
-
     end
 
     -- (TODO) 더블클릭이라면 각 키의 구현

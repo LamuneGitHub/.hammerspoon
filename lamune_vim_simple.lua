@@ -6,41 +6,87 @@ local activeBindings = {}
 -- Key mappings for cursor mode
 local keyMappings = {
 
-    {t="key", from = {{},"n"}, to = {{},"pageup"}},
-    {t="key", from = {{},"m"}, to = {{},"pagedown"}},
+    {t="key", from = {{},"y"}, to = {{},"pageup"}},
+    {t="key", from = {{},"h"}, to = {{},"pagedown"}},
     {t="key", from = {{},"u"}, to = {{},"home"}},
     {t="key", from = {{},"o"}, to = {{},"end"}},
     --{t="key", from = {{},"h"}, to = {{"cmd"}, "left"}}, -- beginning of line
     --{t="key", from = {{},";"}, to = {{"cmd"}, "right"}}, -- end of line
 
-    {t="key", from = {{"shift"},"n"}, to = {{"shift"},"pageup"}},
-    {t="key", from = {{"shift"},"m"}, to = {{"shift"},"pagedown"}},
+    {t="key", from = {{"shift"},"y"}, to = {{"shift"},"pageup"}},
+    {t="key", from = {{"shift"},"h"}, to = {{"shift"},"pagedown"}},
     {t="key", from = {{"shift"},"u"}, to = {{"shift"},"home"}},
     {t="key", from = {{"shift"},"o"}, to = {{"shift"},"end"}},
     --{t="key", from = {{"shift"},"h"}, to = {{"shift","cmd"}, "left"}}, -- beginning of line
     --{t="key", from = {{"shift"},";"}, to = {{"shift","cmd"}, "right"}}, -- end of line
 
-    {t="key", from = {{"cmd"},"n"}, to = {{"cmd"},"pageup"}},
-    {t="key", from = {{"cmd"},"m"}, to = {{"cmd"},"pagedown"}},
+    {t="key", from = {{"cmd"},"y"}, to = {{"cmd"},"pageup"}},
+    {t="key", from = {{"cmd"},"h"}, to = {{"cmd"},"pagedown"}},
     {t="key", from = {{"cmd"},"u"}, to = {{"cmd"},"home"}},
     {t="key", from = {{"cmd"},"o"}, to = {{"cmd"},"end"}},
 
     -------------------------------------------------------------------------
-    {t="fnc", from = {{},"p"}, to = insert_cur_line},  -- 현재 줄에 클립보드 내용 삽입
+
+
+
+    {t="fnc", from = {{},"p"}, to = function() -- ctrl + v 
+        fastKeyStroke(mod.cmd, "v") 
+    end}, 
 
     {t="key", from = {{},"["}, to = {{},"delete"}},         -- delete ⬅️
     {t="key", from = {{},"]"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
+    {t="key", from = {{},"'"}, to = {{},"delete"}},         -- delete ⬅️
+    --{t="key", from = {{},"'"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
     
-    {t="fnc", from = {{},"\\"}, to = function() -- 한줄 복사
+    {t="key", from = {{},"z"}, to = {{"cmd"},"z"}},         -- cmd + z
+    {t="key", from = {{},"x"}, to = {{"cmd"},"x"}},         -- cmd + z
+    {t="key", from = {{},"c"}, to = {{"cmd"},"c"}},         -- cmd + z
+    {t="key", from = {{},"v"}, to = {{"cmd"},"v"}},         -- cmd + z
+
+    
+    -------------------------------------------------------------------------
+
+    {t="fnc", from = {{},"b"}, to = function() -- 줄 복제
+        fastKeyStroke({}, "home")
+        fastKeyStroke({"shift"}, "end")
+        fastKeyStroke("cmd", "c")
+        fastKeyStroke({}, "end")
+        fastKeyStroke({}, "return")
+
+        -- todo 붙여 넣기 하고
+        -- 아래로 이동
+    end}, 
+    {t="fnc", from = {{},"n"}, to = function() -- 새로운 라인
+        fastKeyStroke({}, "end")
+        fastKeyStroke({}, "return")
+    end}, 
+    {t="fnc", from = {{},"m"}, to = function() -- 한줄 복사
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
         fastKeyStroke(mod.cmd, "c") 
     end}, 
-
-    {t="fnc", from = {{"cmd","shift"},"\\"}, to = function() -- 한줄 잘라내기
+    {t="fnc", from = {{},","}, to = insert_cur_line},  -- 클립보드 현재 줄에 삽입
+    {t="fnc", from = {{},"."}, to = function() -- 한줄 잘라내기
         fastKeyStroke(mod.cmd, "right") 
         fastKeyStroke(mod.cmd_and_shift, "left") 
-        fastKeyStroke(mod.cmd, "x") 
+        fastKeyStroke(mod.cmd, "x")
+    end}, 
+    {t="fnc", from = {{},"/"}, to = function() -- 한줄 삭제
+        fastKeyStroke({}, "end")
+        fastKeyStroke({"shift"}, "home")
+        fastKeyStroke({}, "delete")
+        fastKeyStroke({}, "delete")
+    end}, 
+
+
+    {t="fnc", from = {mod.cmd,"/"}, to = function() -- 한줄 주석
+        fastKeyStroke({}, "end")
+        fastKeyStroke({}, "home")
+        fastKeyStroke({}, "-")
+        fastKeyStroke({}, "-")
+        fastKeyStroke({}, "end")
+        fastKeyStroke({}, "home")
+        fastKeyStroke({}, "down")
     end}, 
 
     -------------------------------------------------------------------------
@@ -75,7 +121,6 @@ local keyMappings = {
 }
 
 
-
 ------------------------------------------------------------------------
 -- vim 모드 토클
 
@@ -84,9 +129,9 @@ local function loadMode()
 
     loadKeyBinding( keyMappings , activeBindings )
 
-    table.insert(activeBindings, u_with_other_bind)
-    table.insert(activeBindings, i_with_other_bind)
-    table.insert(activeBindings, o_with_other_bind)
+--    table.insert(activeBindings, u_with_other_bind)
+--    table.insert(activeBindings, i_with_other_bind)
+--    table.insert(activeBindings, o_with_other_bind)
 
 end
 
@@ -118,7 +163,7 @@ end
 
 -- Function to toggle cursor mode
 local function toggleCursorMode()
-    -- print ( "toggleCursorMode"  )
+    print ( "toggleCursorMode"  )
     -- print( curStates.cursorMode )
 
     if not curStates.cursorMode then
@@ -131,11 +176,13 @@ local function toggleCursorMode()
     alter_CurStates()
 end
 
+
+
 -------------------------------------------------------------------------
 -- vim 키 기능 실행
 
--- (PRE) karabiner에서 caplock 를 f14로 사전 맵핑 시켜 놓았음 
-hs.hotkey.bind({}, "f14", toggleCursorMode)
+-- (PRE) karabiner에서 caplock 를 f13로 사전 맵핑 시켜 놓았음 
+hs.hotkey.bind({}, "f13", toggleCursorMode)
 
 -- Initialize by disabling cursor mode
 loadMode()
@@ -143,7 +190,5 @@ disableCursorMode()
 
 
 --------------------------------------------------------------------------------
-
-
 
 
