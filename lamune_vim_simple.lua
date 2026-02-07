@@ -65,7 +65,7 @@ local keyMappings = {
     {t="fnc", from = {{},"["}, to = function() -- ctrl + v 
         fastKeyStroke(mod.cmd, "v") 
     end}, 
-    {t="fnc", from = {{"cmd"},"["}, to = insert_cur_line},  -- 현재 줄에 클립보드 삽입
+    {t="fnc", from = {{"cmd"},"["}, to = pasteLine },  -- 현재 줄에 클립보드 삽입
 
 
     ------------------------------------------------------------------------
@@ -83,7 +83,7 @@ local keyMappings = {
         fastKeyStroke({}, "end")
         fastKeyStroke({}, "return")
     end}, 
-    {t="fnc", from = {{"shift"},"."}, to = copyLine }, -- 줄 복제
+    {t="fnc", from = {{"shift"},"."}, to = duplicateLine }, -- 줄 복제
 
 
     ------------------------------------------------------------------------

@@ -97,9 +97,38 @@ vimac = function()
     fastKeyStroke(mod.cmd_and_alt, "=")
 end
 
+-- 한줄 복제
+function duplicateLine() 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd, "right") 
+    fastKeyStroke(mod.cmd, "c") 
+    fastKeyStroke("cmd", "v")
+    fastKeyStroke({}, "home")
+end
+
+-- 한줄 삭제
+function deleteLine()
+    fastKeyStroke({}, "end")
+    fastKeyStroke({"shift"}, "home")
+    fastKeyStroke({"shift"}, "home")
+    fastKeyStroke({}, "forwarddelete")
+    fastKeyStroke({}, "forwarddelete")
+end
+
+-- 한줄 잘라내기
+function cutLine() 
+    fastKeyStroke(mod.cmd, "right") 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd_and_shift, "left") 
+    fastKeyStroke(mod.cmd, "x")
+    fastKeyStroke({}, "forwarddelete")
+end
 
 -- 현재줄에 복사한 내용 끼워 넣기
-insert_cur_line = function()
+pasteLine = function()
     fastKeyStroke(mod.cmd, "left")
     fastKeyStroke(mod.cmd, "v")
     delayEnter()

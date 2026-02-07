@@ -140,33 +140,6 @@ function delayEnter2()
 end
 
 
-function copyLine() -- 한줄 복제
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd, "right") 
-    fastKeyStroke(mod.cmd, "c") 
-    fastKeyStroke("cmd", "v")
-    fastKeyStroke({}, "home")
-end
-
-function deleteLine() -- 한줄 삭제
-    fastKeyStroke({}, "end")
-    fastKeyStroke({"shift"}, "home")
-    fastKeyStroke({"shift"}, "home")
-    fastKeyStroke({}, "forwarddelete")
-    fastKeyStroke({}, "forwarddelete")
-end
-
-function cutLine() -- 한줄 잘라내기
-    fastKeyStroke(mod.cmd, "right") 
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd_and_shift, "left") 
-    fastKeyStroke(mod.cmd, "x")
-    fastKeyStroke({}, "forwarddelete")
-end
-
 
 
 ------------------------------------------------------------------

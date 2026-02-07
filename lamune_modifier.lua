@@ -117,16 +117,13 @@ function checkDoublePress(event)
 
 --------------------------------------------------------------------------------
 -- (TODO) 각 키별로 더블클릭시 할당할 기능 구현 TODO
-    if keyCode == hs.keycodes.map["a"] then
-        print ( "a 키 두번 눌림" )
-        --TODO: 필요한 기능 구현
+    if keyCode == hs.keycodes.map["p"] then
         return
---    elseif keyCode == hs.keycodes.map["b"] then
---        -- print ( "double" )
---        --TODO: 필요한 기능 구현
---        return
+   elseif keyCode == hs.keycodes.map["["] then
+        return
+   elseif keyCode == hs.keycodes.map["'"] then
+       return
 --------------------------------------------------------------------------------
-
     -- curStates.rCmd = flags.cmd and keyCode == 54 or false
     -- curStates.rAlt = flags.alt and keyCode == 61 or false
     -- curStates.rShift = flags.shift and keyCode == 60 or false
