@@ -6,10 +6,10 @@ local activeBindings = {}
 -- Key mappings for cursor mode
 local keyMappings = {
 
-    {t="key", from = {{},"b"}, to = {{},"0"}},
-    {t="key", from = {{},"n"}, to = {{},"1"}},
-    {t="key", from = {{},"m"}, to = {{},"2"}},
-    {t="key", from = {{},","}, to = {{},"3"}},
+    {t="key", from = {{},"n"}, to = {{},"0"}},
+    {t="key", from = {{},"m"}, to = {{},"1"}},
+    {t="key", from = {{},","}, to = {{},"2"}},
+    {t="key", from = {{},"."}, to = {{},"3"}},
     {t="key", from = {{},"j"}, to = {{},"4"}},
     {t="key", from = {{},"k"}, to = {{},"5"}},
     {t="key", from = {{},"l"}, to = {{},"6"}},
@@ -17,21 +17,22 @@ local keyMappings = {
     {t="key", from = {{},"i"}, to = {{},"8"}},
     {t="key", from = {{},"o"}, to = {{},"9"}},
 
-    {t="key", from = {{},"y"}, to = {{},"+"}},
+    {t="key", from = {{},"y"}, to = {{"shift"},"="}}, -- ++*===============/////////////////////////
     {t="key", from = {{},"h"}, to = {{},"-"}},
-    {t="key", from = {{},"["}, to = {{},"*"}},
-    {t="key", from = {{},"'"}, to = {{},"/"}},
+    {t="key", from = {{},"p"}, to = {{"shift"},"8"}}, -- *
+    {t="key", from = {{},"["}, to = {{},"="}},
+    --{t="key", from = {{},"/"}, to = {{},"="}},
 
     {t="key", from = {{},";"}, to = {{},"delete"}},         -- delete ⬅️
     {t="key", from = {{},"'"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
 
 
-    {t="fnc", from = {{},"p"}, to = function() -- ctrl + c
-        fastKeyStroke(mod.cmd, "c") 
-    end},     
-    {t="fnc", from = {{"shift"},"p"}, to = function() -- ctrl + v 
-        fastKeyStroke(mod.cmd, "v") 
-    end}, 
+    -- {t="fnc", from = {{},"p"}, to = function() -- ctrl + c
+    --     fastKeyStroke(mod.cmd, "c") 
+    -- end},     
+    -- {t="fnc", from = {{"shift"},"p"}, to = function() -- ctrl + v 
+    --     fastKeyStroke(mod.cmd, "v") 
+    -- end}, 
 
 
     {t="key", from = {{"cmd"},"j"}, to = {{},"left"}},
