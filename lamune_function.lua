@@ -16,6 +16,52 @@ runningAppInfo = function()
 end
 
 ------------------------------------------------------------------
+
+-- 날짜 입력
+function keyInput_date()  
+    hs.eventtap.keyStrokes(os.date("(%Y-%m-%d)"))
+end
+
+-- 날짜 및 시간 입력
+function keyInput_dateTime()  
+    hs.eventtap.keyStrokes(os.date("(%Y-%m-%d-%H%M)"))
+end
+
+-- T O D O 입력
+function keyInput_Todo()
+  hs.eventtap.keyStrokes( "#TO")
+  hs.eventtap.keyStrokes( "DO: ")
+end
+
+-- md 에서 강제 space 
+function md_HardSpace()
+  hs.eventtap.keyStrokes( "$\\quad$")
+end 
+
+
+------------------------------------------------------------------
+-- 시스템 전체 소리 음소거 토글 함수
+function toggleSystemMute()
+    local device = hs.audiodevice.defaultOutputDevice()
+    
+    if not device then
+        hs.alert.show("출력 오디오 장치를 찾을 수 없습니다.")
+        return
+    end
+
+    -- 현재 음소거 상태 확인 후 반전
+    local isMuted = device:muted()
+    device:setMuted(not isMuted)
+
+    -- 현재 상태 알림 표시 (원하지 않으면 아래 if문 삭제 가능)
+    if not isMuted then
+        hs.alert.show("🔇 시스템 음소거")
+    else
+        hs.alert.show("🔊 소리 복원됨")
+    end
+end
+
+------------------------------------------------------------------
 -- chrome 관련 
 
 -- 현재 포커스된 Chrome의 URL을 가져오는 함수
@@ -86,10 +132,61 @@ end
 
 -- 마우스 오른쪽 클릭
 rightMouseClick = function()
-    local mousePos = hs.mouse.getAbsolutePosition()
+
+    -- -- 1. 현재 포커스된 창을 확실히 가져옴
+    -- local win = hs.window.focusedWindow()
+    
+    -- if win then
+    --     -- 2. 창을 앞으로 끌어오고 포커스를 강제로 고정
+    --     win:raise()
+    --     win:focus()
+    -- end
+
+    
+    hs.timer.usleep(0.1 *1000000)
+
+    local mousePos = hs.mouse.absolutePosition()
     hs.eventtap.event.newMouseEvent(hs.eventtap.event.types.rightMouseDown, mousePos):post()
     hs.eventtap.event.newMouseEvent(hs.eventtap.event.types.rightMouseUp, mousePos):post()
-end
+
+    end
+
+
+-- -- 마우스 오른쪽 클릭 함수 (개선됨)
+-- function rightMouseClick()
+--     -- 1. 현재 포커스된 창을 확실히 가져옴
+--     local win = hs.window.focusedWindow()
+    
+--     if win then
+--         -- 2. 창을 앞으로 끌어오고 포커스를 강제로 고정
+--         win:raise()
+--         win:focus()
+--     end
+
+--     -- 3. 현재 마우스 커서 위치 가져오기
+--     -- (참고: hs.mouse.getAbsolutePosition 대신 hs.mouse.absolutePosition이 최신 Hammerspoon 표준입니다)
+--     local mousePos = hs.mouse.absolutePosition()
+
+--     -- 4. 포커스가 확실히 이동할 수 있도록 아주 짧은 딜레이(0.02초) 후 클릭 이벤트 발생
+--     hs.timer.doAfter(0.02, function()
+--         local downEvent = hs.eventtap.event.newMouseEvent(hs.eventtap.event.types.rightMouseDown, mousePos)
+--         local upEvent = hs.eventtap.event.newMouseEvent(hs.eventtap.event.types.rightMouseUp, mousePos)
+        
+--         downEvent:post()
+--         upEvent:post()
+--     end)
+    
+--     print("[우클릭 실행] 현재 포커스 창에 우클릭 전달 완료")
+-- end
+
+----------------------------------------------------------------------------------------
+
+
+
+
+----------------------------------------------------------------------------------------
+
+
 
 -- vimac mode 실행
 vimac = function()
@@ -235,3 +332,57 @@ download_image = function()
     end
 
 end
+
+
+
+------------------------------------
+
+
+
+-- 모든 프로그램에서 현재 창(또는 Finder 선택 파일)을 VS Code로 즉시 열기
+hs.hotkey.bind({"cmd", "shift"}, "E", function()
+    local frontApp = hs.application.frontmostApplication()
+    if not frontApp then return end
+
+    local appName = frontApp:name()
+    local filePath = nil
+
+    -- 1. Finder가 활성화된 경우: 현재 선택된 파일 경로 가져오기
+    if appName == "Finder" then
+        local script = [[
+            tell application "Finder"
+                set sel to selection
+                if (count of sel) > 0 then
+                    return POSIX path of (item 1 of sel as alias)
+                end if
+            end tell
+        ]]
+        local ok, result = hs.osascript.applescript(script)
+        if ok and result ~= "" then
+            filePath = result
+        end
+    else
+        -- 2. 그 외 모든 문서 기반 앱: Hammerspoon 네이티브 AX API로 즉시 경로 추출 (AppleScript 불필요)
+        local win = hs.window.focusedWindow()
+        if win then
+            local axWin = hs.axuielement.windowElement(win)
+            if axWin then
+                local docURL = axWin:attributeValue("AXDocument")
+                if docURL then
+                    filePath = hs.http.urlParts(docURL).path
+                    -- URL 인코딩(한글/공백 등) 디코딩 처리
+                    filePath = string.gsub(filePath, "%%(%x%x)", function(h)
+                        return string.char(tonumber(h, 16))
+                    end)
+                end
+            end
+        end
+    end
+
+    -- 3. 경로가 확인되면 VS Code로 즉시 실행
+    if filePath and filePath ~= "" then
+        hs.task.new("/usr/bin/open", nil, {"-a", "Visual Studio Code", filePath}):start()
+    else
+        hs.alert.show("열 수 있는 파일 경로가 없는 창입니다 (" .. appName .. ")", 1.2)
+    end
+end)

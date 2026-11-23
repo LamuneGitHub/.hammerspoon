@@ -101,13 +101,12 @@ end
 
 
 
-
 -------------------------------------------------------------------------
 -- vim 키 기능 실행
 
 -- (PRE) karabiner에서 caplock 를 f13로 사전 맵핑 시켜 놓았음 
-hs.hotkey.bind({}, "f15", toggleMode_Keypad)
 hs.hotkey.bind({"shift"}, "f13", toggleMode_Keypad)
+hs.hotkey.bind({}, "f15", toggleMode_Keypad)
 
 -- Initialize by disabling cursor mode
 loadMode()

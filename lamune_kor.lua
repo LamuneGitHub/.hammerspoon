@@ -59,14 +59,23 @@ change_eng = function()
 
 end
 
+
+
 -- 커서모드 변경 없이 영문으로 변경
 change_eng_withoutCursorModeChange = function()
     hs.keycodes.currentSourceID(inputSource.english)
     curStates.language = ' 🇺🇸 ABC '
 end
 
+
+-- 커서모드 변경 없이 영문으로 변경
+change_kor_withoutCursorModeChange = function()
+    hs.keycodes.currentSourceID(inputSource.korean1)
+    curStates.language = ' 🇰🇷 가나다1 '
+end
+
 -- 한글 입력 상태로 변경
-change_kor = function()
+change_kor_org = function()
     -- ! 가끔씩 한글로 바뀌었다고 나오지만 한글로 안바뀌는 경우가 있음... 영문키를 다시 눌러주고 하면 되는것 같기도 하고...
     -- change_eng()
 
@@ -74,11 +83,22 @@ change_kor = function()
     disableCursorMode()
 
     -- 한글로 변경
-    hs.keycodes.currentSourceID(inputSource.korean1)
-    curStates.language = ' 🇰🇷 가나다1 '
+    change_kor_withoutCursorModeChange()
 
     -- bar  -- 한글 상태를 표시
     enable_munebar_show(BLUE)
+
+end
+
+
+-- 한글 입력 상태로 변경
+change_kor = function()
+    change_eng_withoutCursorModeChange()
+    change_kor_withoutCursorModeChange()
+    change_eng_withoutCursorModeChange()
+    change_kor_withoutCursorModeChange()
+    change_eng_withoutCursorModeChange()
+    change_kor_org()
 
 end
 
