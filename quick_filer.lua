@@ -1,21 +1,28 @@
 local M = {}
 
+-- =========================================================================
+-- 전역 상태 및 설정 변수
+-- =========================================================================
 local iniPath = os.getenv("HOME") .. "/.hammerspoon/quick_filer.ini"
-local destinations = {}
-local destOrder = {}
-local showNotification = true
+local destinations = {}       -- 단축키(문자) -> 목적지 경로 매핑 테이블
+local destOrder = {}          -- 오버레이에 표시할 목적지 순서 유지용 배열
+local showNotification = true -- 작업 완료 후 알림 표시 여부
 local useParentBaseDir = false
 local useRootBaseDir = false
 local rootBaseDir = ""
-local undoStack = {}
-local lastSelectedDir = nil -- 마지막으로 선택/처리되었던 파일의 부모 폴더 경로 저장
+local undoStack = {}          -- 실행 취소(Undo) 이력 스택
+local lastSelectedDir = nil   -- 마지막으로 선택/처리되었던 파일의 부모 폴더 경로 저장
 
-local isFileManageMode = false -- 파일 관리 모드 상태 플래그
-local overlayCanvas = nil
-local overlayKeyTap = nil
-local globalHotkeyTap = nil
+local isFileManageMode = false -- 파일 관리 모드 활성화 여부 플래그
+local overlayCanvas = nil      -- 목적 폴더 선택 화면(오버레이) 캔버스 객체
+local overlayKeyTap = nil      -- 오버레이 전용 키 이벤트 가로채기 객체
+local globalHotkeyTap = nil    -- 전역 키 이벤트 가로채기 객체
 
--- INI 파일 열기
+-- =========================================================================
+-- 1. INI 설정 파일 열기 및 로드
+-- =========================================================================
+
+-- 설정 파일(quick_filer.ini)을 기본 편집기로 열기 (파일이 없으면 기본 템플릿 생성)
 function M.openConfig()
     if not hs.fs.attributes(iniPath) then
         local defaultIni = [[
@@ -42,12 +49,12 @@ rootBaseDir = ~/Downloads
     hs.execute(string.format('open %q', iniPath))
 end
 
--- 1. INI 파일 파싱
+-- INI 파일 파싱 및 내부 설정 갱신
 function M.loadConfig()
     destinations = {}
     destOrder = {}
 
-    -- 리로드 시 기본값 초기화
+    -- 리로드 시 설정값 기본값으로 초기화
     showNotification = true
     useParentBaseDir = false
     useRootBaseDir = false
@@ -96,7 +103,11 @@ function M.loadConfig()
     return true
 end
 
--- 경로 변환
+-- =========================================================================
+-- 2. 경로 계산 및 현재 선택된 파일 추출
+-- =========================================================================
+
+-- 상대경로/물결표(~)를 실제 절대경로로 변환
 local function resolvePath(rawPath, baseDir)
     local path = rawPath:gsub("^~", os.getenv("HOME"))
     if not path:match("^/") then
@@ -122,7 +133,7 @@ local function getEffectiveBaseDir(currentFileDir)
     return currentFileDir
 end
 
--- 2. 현재 선택/열람 중인 파일 추출
+-- 현재 활성 앱에서 선택되거나 열람 중인 파일 목록 추출
 local function getSelectedFiles()
     local frontApp = hs.application.frontmostApplication()
     local files = {}
@@ -130,7 +141,7 @@ local function getSelectedFiles()
 
     local bundleID = frontApp:bundleID() or ""
 
-    -- [1] Finder
+    -- [1] Finder: AppleScript로 선택된 항목 추출
     if bundleID == "com.apple.finder" then
         local script = [[
             tell application "Finder"
@@ -154,7 +165,7 @@ local function getSelectedFiles()
         return files
     end
 
-    -- [2] qView 및 이미지/문서 뷰어
+    -- [2] qView 및 문서/이미지 뷰어: AXDocument 속성 또는 창 제목에서 경로 추출
     local win = frontApp:focusedWindow()
     if win then
         local axWin = hs.axuielement.windowElement(win)
@@ -182,7 +193,7 @@ local function getSelectedFiles()
         end
     end
 
-    -- [3] 범용 앱 클립보드 우회 추출
+    -- [3] 범용 앱: Cmd+C 클립보드 우회 추출 후 기존 클립보드 복원
     local prevContents = hs.pasteboard.readAllData()
     hs.pasteboard.clearContents()
     hs.eventtap.keyStroke({"cmd"}, "c", 0)
@@ -208,7 +219,7 @@ local function getSelectedFiles()
     return files
 end
 
--- 중복 파일명 방지
+-- 대상 폴더에 동일 파일명이 존재할 경우 _1, _2 등의 접미사를 붙여 충돌 방지
 local function getUniqueTargetPath(dir, filename)
     local target = dir .. "/" .. filename
     if not hs.fs.attributes(target) then return target end
@@ -222,7 +233,10 @@ local function getUniqueTargetPath(dir, filename)
     end
 end
 
--- 3. 파일 작업 수행 (이동 / 복사 / 삭제)
+-- =========================================================================
+-- 3. 파일 작업 수행 (이동 / 복사 / 삭제) 및 실행 취소 (Undo)
+-- =========================================================================
+
 local function executeFileAction(mode, files, rawDestPath)
     local historyRecord = { mode = mode, items = {} }
     local successCount = 0
@@ -271,7 +285,7 @@ local function executeFileAction(mode, files, rawDestPath)
             hs.alert.show(string.format("%s (%d개)", label, successCount), 0.8)
         end
 
-        -- 이동 또는 삭제 후 오른쪽 방향키(Right Arrow) 한 번 입력
+        -- 이동 또는 삭제 후 다음 파일로 넘어가기 위해 오른쪽 방향키(Right Arrow) 입력
         if mode == "move" or mode == "delete" then
             hs.timer.doAfter(0.05, function()
                 hs.eventtap.keyStroke({}, "right", 0)
@@ -280,7 +294,7 @@ local function executeFileAction(mode, files, rawDestPath)
     end
 end
 
--- 4. 실행 취소 (Undo)
+-- 마지막 파일 작업 실행 취소 (Undo)
 function M.undoLastAction()
     if #undoStack == 0 then
         hs.alert.show("취소할 이전 작업이 없습니다.", 1.2)
@@ -309,12 +323,17 @@ function M.undoLastAction()
     local actionName = (last.mode == "move" and "이동") or (last.mode == "copy" and "복사") or "삭제"
     hs.alert.show(string.format("실행 취소: %s 복구 완료 (%d개)", actionName, restored), 1.5)
 
+    -- 복구된 파일을 다시 보기 위해 왼쪽 방향키(Left Arrow) 입력
     hs.timer.doAfter(0.1, function()
         hs.eventtap.keyStroke({}, "left", 0)
     end)
 end
 
--- 5. 오버레이 닫기
+-- =========================================================================
+-- 4. 목적 폴더 선택 화면 (오버레이) 표시 및 닫기
+-- =========================================================================
+
+-- 목적 폴더 선택 화면(오버레이) 닫기 및 리소스 정리
 local function closeOverlay()
     if overlayKeyTap then
         overlayKeyTap:stop()
@@ -326,7 +345,8 @@ local function closeOverlay()
     end
 end
 
--- 6. 오버레이 표시 (mode: "move", "copy", 또는 "view")
+-- 목적 폴더 선택 화면(오버레이) 표시
+-- mode: "move"(이동), "copy"(복사), "view"(선택된 파일 없이 조회/설정 편집용)
 local function showDestinationOverlay(mode, files)
     closeOverlay()
     if not M.loadConfig() then return end
@@ -335,7 +355,7 @@ local function showDestinationOverlay(mode, files)
     local rowHeight = 30
     local headerHeight = 55
     local footerHeight = 35
-    local width = 540
+    local width = 580
     local height = headerHeight + (#destOrder * rowHeight) + footerHeight
 
     overlayCanvas = hs.canvas.new({
@@ -345,6 +365,7 @@ local function showDestinationOverlay(mode, files)
         h = height
     })
 
+    -- 배경 박스
     overlayCanvas[1] = {
         type = "rectangle",
         action = "fill",
@@ -352,16 +373,18 @@ local function showDestinationOverlay(mode, files)
         roundedRectRadii = { xRadius = 12, yRadius = 12 }
     }
 
+    -- 모드별 테두리 색상 및 타이틀 문구 설정
     local strokeColor = { red = 0.9, green = 0.7, blue = 0.2, alpha = 0.85 }
-    local titleText = "설정된 단축키 및 목적지 목록 (조회 모드)"
+    local titleText = "목적 폴더 선택 화면 (조회 모드 — 선택된 파일 없음)"
     if mode == "move" then
         strokeColor = { red = 0.3, green = 0.7, blue = 1.0, alpha = 0.85 }
-        titleText = string.format("파일 이동 (MOVE) — 대상 키 입력 (%d개 선택됨)", #files)
+        titleText = string.format("목적 폴더 선택 — 이동(MOVE) (%d개 선택됨)", #files)
     elseif mode == "copy" then
         strokeColor = { red = 0.3, green = 0.9, blue = 0.5, alpha = 0.85 }
-        titleText = string.format("파일 복사 (COPY) — 대상 키 입력 (%d개 선택됨)", #files)
+        titleText = string.format("목적 폴더 선택 — 복사(COPY) (%d개 선택됨)", #files)
     end
 
+    -- 테두리 선
     overlayCanvas[2] = {
         type = "rectangle",
         action = "stroke",
@@ -370,6 +393,7 @@ local function showDestinationOverlay(mode, files)
         roundedRectRadii = { xRadius = 12, yRadius = 12 }
     }
 
+    -- 상단 타이틀 텍스트
     overlayCanvas[3] = {
         type = "text",
         text = titleText,
@@ -378,6 +402,7 @@ local function showDestinationOverlay(mode, files)
         frame = { x = 20, y = 15, w = width - 40, h = 25 }
     }
 
+    -- INI에 정의된 목적지 단축키 목록 렌더링
     local idx = 4
     for i, item in ipairs(destOrder) do
         local yPos = headerHeight + (i - 1) * rowHeight
@@ -401,58 +426,80 @@ local function showDestinationOverlay(mode, files)
         idx = idx + 1
     end
 
-    local footerText = (mode == "view")
-        and "ESC 또는 [m]: 닫기  |  Cmd+Ctrl+[m]: 설정 파일(INI) 편집"
-        or "ESC: 취소  |  [m]: 설정 파일(INI) 편집"
-
+    -- 하단 조작 안내 문구
     overlayCanvas[idx] = {
         type = "text",
-        text = footerText,
+        text = "ESC / Enter / F12 / Cmd+Ctrl+/: 닫기   |   [m]: 설정 파일(INI) 편집",
         textSize = 11,
-        textColor = { white = 0.6, alpha = 0.9 },
+        textColor = { white = 0.65, alpha = 0.9 },
         frame = { x = 20, y = height - 26, w = width - 40, h = 20 }
     }
 
+    -- 전체 화면 앱(qView 등) 위에서도 표시되도록 레벨 및 동작 설정
     overlayCanvas:behavior({"canJoinAllSpaces", "fullScreenAuxiliary"})
     overlayCanvas:level(hs.canvas.windowLevels.screenSaver)
     overlayCanvas:show()
 
+    -- 오버레이가 열려 있는 동안의 키 입력 처리
     overlayKeyTap = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(event)
+        local flags = event:getFlags()
         local keyCode = event:getKeyCode()
         local char = (event:getCharacters(true) or ""):lower()
 
-        if keyCode == 53 or (mode == "view" and char == "m") then
+        -- [닫기] ESC 키
+        if keyCode == hs.keycodes.map["escape"] then
             closeOverlay()
+            return true
+        -- [닫기] Enter 키 (일반 Return 및 숫자패드 Enter 모두 지원)
+        elseif keyCode == hs.keycodes.map["return"] or keyCode == hs.keycodes.map["padenter"] then
+            closeOverlay()
+            return true
+        -- [닫기] F12 키
+        elseif keyCode == hs.keycodes.map["f12"] then
+            closeOverlay()
+            return true
+        -- [닫기] Cmd + Ctrl + /
+        elseif flags.cmd and flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["/"] then
+            closeOverlay()
+            return true
+        -- [설정 편집] 단독 m 키 (모든 오버레이 모드에서 INI 설정 파일 열기)
+        elseif not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["m"] then
+            closeOverlay()
+            M.openConfig()
+            return true
+        -- [파일 작업 실행] 이동/복사 모드에서 등록된 목적지 단축키 입력 시 실행
+        elseif mode ~= "view" and not flags.cmd and not flags.ctrl and not flags.alt and destinations[char] then
+            local targetRaw = destinations[char]
+            closeOverlay()
+            executeFileAction(mode, files, targetRaw)
             return true
         end
 
-        if mode ~= "view" then
-            if char == "m" then
-                closeOverlay()
-                M.openConfig()
-                return true
-            end
-
-            if destinations[char] then
-                local targetRaw = destinations[char]
-                closeOverlay()
-                executeFileAction(mode, files, targetRaw)
-                return true
-            end
-        end
-
+        -- 오버레이가 열려 있는 동안 그 외 키 입력은 하위 앱으로 전달되지 않도록 차단
         return true
     end)
     overlayKeyTap:start()
 end
 
--- 트리거 함수
+-- =========================================================================
+-- 5. 트리거 및 유틸리티 함수
+-- =========================================================================
+
+-- 파일 작업 트리거
+-- rawDestPath가 nil이고 mode가 "move"인 경우(목적 폴더 선택 화면 호출):
+--   선택된 파일이 있으면 이동(move) 모드로, 선택된 파일이 없으면 조회(view) 모드로 오버레이 표시
 function M.trigger(mode, rawDestPath)
     hs.timer.doAfter(0, function()
         M.loadConfig()
         local files = getSelectedFiles()
+
         if #files == 0 then
-            hs.alert.show("선택된 파일이 없습니다.", 1.0)
+            -- 목적 폴더 선택 화면 호출 시 선택된 파일이 없더라도 조회/설정 편집이 가능하도록 view 모드로 표시
+            if not rawDestPath and mode == "move" then
+                showDestinationOverlay("view", {})
+            else
+                hs.alert.show("선택된 파일이 없습니다.", 1.0)
+            end
             return
         end
 
@@ -466,7 +513,7 @@ function M.trigger(mode, rawDestPath)
     end)
 end
 
--- 모드 진입/종료 내부 핸들러 (ModeManager가 호출)
+-- 파일 관리 모드 진입/종료 내부 핸들러 (ModeManager가 호출)
 local function enterFileManageMode()
     isFileManageMode = true
     if curStates then curStates.fileManageMode = true end
@@ -480,7 +527,7 @@ local function exitFileManageMode()
     closeOverlay()
 end
 
--- 모드 전환 함수 (ModeManager에 위임)
+-- 파일 관리 모드 전환 함수 (ModeManager에 위임)
 function M.toggleMode()
     if ModeManager then
         ModeManager.toggle("filer")
@@ -496,7 +543,7 @@ function M.toggleMode()
     end
 end
 
--- 물리 keyCode를 문자(소문자)로 변환하는 헬퍼
+-- 물리 keyCode를 소문자 단일 문자로 변환하는 헬퍼
 local function getBaseCharFromKeyCode(keyCode)
     local keyStr = hs.keycodes.map[keyCode]
     if keyStr and #keyStr == 1 then
@@ -557,7 +604,10 @@ function M.openLastFolderInFinder()
     end)
 end
 
--- 7. 초기화: ModeManager 등록 및 OS 저수준 전역 단축키 바인딩
+-- =========================================================================
+-- 6. 초기화: ModeManager 등록 및 OS 저수준 전역 단축키 바인딩
+-- =========================================================================
+
 function M.init()
     M.loadConfig()
 
@@ -567,81 +617,94 @@ function M.init()
             label = "File Manage 🇺🇸 ABC",
             color = BROWN,
             forceEnglish = true,
-            alertMessage = "🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [m]: 목록",
+            alertMessage = "🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [F12 / Cmd+Ctrl+/]: 목적 폴더 선택",
             alertDuration = 2.0,
             onEnter = enterFileManageMode,
             onExit = exitFileManageMode,
         })
     end
 
+    -- 재초기화 시 기존 이벤트 탭 정리
     if globalHotkeyTap then
         globalHotkeyTap:stop()
     end
 
     globalHotkeyTap = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(event)
+        -- 오버레이가 열려 있을 때는 overlayKeyTap이 키 입력을 전담하므로 통과시킴
         if overlayCanvas then return false end
 
         local flags = event:getFlags()
         local keyCode = event:getKeyCode()
 
-        -- [A] Cmd + Alt + F13 : 파일 관리 모드 <-> 영문 모드 토글
-        if flags.cmd and not flags.ctrl and flags.alt and not flags.shift and keyCode == 105 then
+        -- -----------------------------------------------------------------
+        -- [A] 모드 전환 단축키 (일반모드 / 파일관리모드 공통)
+        -- -----------------------------------------------------------------
+
+        -- Cmd + Alt + F13 : 파일 관리 모드 <-> 영문 모드 토글
+        if flags.cmd and not flags.ctrl and flags.alt and not flags.shift and keyCode == hs.keycodes.map["f13"] then
             hs.timer.doAfter(0, function() M.toggleMode() end)
             return true
-        end
 
-        -- [B] 공통 조합 단축키 (Cmd + Ctrl 기반)
-        if flags.cmd and flags.ctrl then
-            if keyCode == hs.keycodes.map["/"] then
-                if not flags.shift and not flags.alt then
-                    M.trigger("move", nil)
-                    return true
-                elseif flags.shift and not flags.alt then
-                    M.trigger("copy", nil)
-                    return true
-                elseif not flags.shift and flags.alt then
-                    M.trigger("delete", nil)
-                    return true
-                end
-            elseif keyCode == hs.keycodes.map["m"] and not flags.shift and not flags.alt then
-                hs.timer.doAfter(0, function() M.openConfig() end)
-                return true
-            elseif keyCode == hs.keycodes.map["o"] and not flags.shift and not flags.alt then
-                M.revealInFinder()
-                return true
-            elseif keyCode == hs.keycodes.map["z"] and flags.shift and not flags.alt then
-                hs.timer.doAfter(0, function() M.undoLastAction() end)
-                return true
-            end
-        end
+        -- -----------------------------------------------------------------
+        -- [B] 공통 조합 단축키 (일반모드 / 파일관리모드 동일 동작)
+        -- -----------------------------------------------------------------
 
+        -- Cmd + Ctrl + / : 목적 폴더 선택 화면 호출 (이동 모드, 선택 파일 없으면 조회 모드)
+        elseif flags.cmd and flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["/"] then
+            M.trigger("move", nil)
+            return true
+
+        -- Cmd + Ctrl + Shift + / : 목적 폴더 선택 화면 호출 (복사 모드)
+        elseif flags.cmd and flags.ctrl and not flags.alt and flags.shift and keyCode == hs.keycodes.map["/"] then
+            M.trigger("copy", nil)
+            return true
+
+        -- Cmd + Ctrl + Alt + / : 선택 파일 휴지통으로 삭제
+        elseif flags.cmd and flags.ctrl and flags.alt and not flags.shift and keyCode == hs.keycodes.map["/"] then
+            M.trigger("delete", nil)
+            return true
+
+        -- Cmd + Ctrl + O : 현재 선택/열람 중인 파일을 Finder에서 보기
+        elseif flags.cmd and flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["o"] then
+            M.revealInFinder()
+            return true
+
+        -- Cmd + Ctrl + Shift + Z : 마지막 파일 작업 실행 취소 (Undo)
+        elseif flags.cmd and flags.ctrl and not flags.alt and flags.shift and keyCode == hs.keycodes.map["z"] then
+            hs.timer.doAfter(0, function() M.undoLastAction() end)
+            return true
+
+        -- -----------------------------------------------------------------
         -- [C] "파일 관리 모드" 활성화 시 단독 키 처리
-        if isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt then
-            if keyCode == 31 and not flags.shift then
-                M.revealInFinder()
-                return true
-            end
+        -- -----------------------------------------------------------------
 
-            if keyCode == hs.keycodes.map["p"] and not flags.shift then
-                M.openLastFolderInFinder()
-                return true
-            end
+        -- F12 : 목적 폴더 선택 화면 호출
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["f12"] then
+            M.trigger("move", nil)
+            return true
 
-            if keyCode == 44 and not flags.shift then
-                M.trigger("delete", nil)
-                return true
-            end
+        -- o : 현재 선택/열람 중인 파일을 Finder에서 보기
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["o"] then
+            M.revealInFinder()
+            return true
 
-            if keyCode == hs.keycodes.map["m"] and not flags.shift then
-                hs.timer.doAfter(0, function() showDestinationOverlay("view", {}) end)
-                return true
-            end
+        -- p : 마지막으로 작업한 폴더를 Finder에서 열기
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["p"] then
+            M.openLastFolderInFinder()
+            return true
 
-            if keyCode == hs.keycodes.map["delete"] then
-                hs.timer.doAfter(0, function() M.undoLastAction() end)
-                return true
-            end
+        -- / : 선택 파일 휴지통으로 삭제
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["/"] then
+            M.trigger("delete", nil)
+            return true
 
+        -- Delete (Backspace) : 마지막 파일 작업 실행 취소 (Undo)
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and keyCode == hs.keycodes.map["delete"] then
+            hs.timer.doAfter(0, function() M.undoLastAction() end)
+            return true
+
+        -- 등록된 목적지 단축키 (단독: 즉시 이동 / Shift+키: 즉시 복사)
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt then
             local baseChar = getBaseCharFromKeyCode(keyCode)
             if baseChar and destinations[baseChar] then
                 local targetRaw = destinations[baseChar]
