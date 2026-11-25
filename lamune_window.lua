@@ -2,6 +2,7 @@
 -- App 실행, 창 호출 기능 
 --------------------------------------------------------------------------------
 
+-- [참고] Spotlight 인덱스를 조회하므로 앱 전환 시 간헐적 지연을 유발할 수 있음 (불필요 시 주석 처리 고려)
 hs.application.enableSpotlightForNameSearches(true)
 
 require('lamune_stack')

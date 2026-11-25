@@ -143,8 +143,10 @@ end
 
 ------------------------------------------------------------------
 -- 키 바인딩 설정tbl 에 따라 키 맵핑
-function loadKeyBinding(configTbl, historyTbl)
+-- @param autoEnable boolean|nil : true(기본값)면 즉시 활성화, false면 비활성 상태로 생성
+function loadKeyBinding(configTbl, historyTbl, autoEnable)
     historyTbl = historyTbl or nil
+    if autoEnable == nil then autoEnable = true end
 
     for _, mapping in ipairs(configTbl) do
         local from = mapping.from
@@ -153,21 +155,26 @@ function loadKeyBinding(configTbl, historyTbl)
 
         local bind
         if t == "key" then  
-            bind = hs.hotkey.bind(from[1], from[2], 
+            bind = hs.hotkey.new(from[1], from[2], 
                 function() fastKeyStroke(to[1], to[2]) end,
                 nil,
                 function() fastKeyStroke(to[1], to[2]) end
             )
         elseif t == "fnc" then 
-            bind = hs.hotkey.bind(from[1], from[2], to)
+            bind = hs.hotkey.new(from[1], from[2], to)
         elseif t == "app" then 
-            bind = hs.hotkey.bind(from[1], from[2], function()
+            bind = hs.hotkey.new(from[1], from[2], function()
                 toggleApplication(to)
             end)
         end 
 
-        if historyTbl ~= nil then
-            table.insert(historyTbl, bind)
+        if bind then
+            if autoEnable then
+                bind:enable()
+            end
+            if historyTbl ~= nil then
+                table.insert(historyTbl, bind)
+            end
         end
     end
 end

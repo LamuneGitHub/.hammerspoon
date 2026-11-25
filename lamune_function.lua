@@ -551,20 +551,28 @@ function bindEscToToggleApp(appNames)
         end
     end)
 
-    local appFilter = hs.window.filter.new(appNames)
-    appFilter:subscribe(hs.window.filter.windowFocused, function()
-        escToggleHotkey:enable()
+    -- hs.window.filter 대신 가벼운 hs.application.watcher 사용 (로딩 지연 개선)
+    local appWatcher = hs.application.watcher.new(function(appName, eventType, appObject)
+        if eventType == hs.application.watcher.activated then
+            if targetSet[appName] then
+                escToggleHotkey:enable()
+            else
+                escToggleHotkey:disable()
+            end
+        elseif eventType == hs.application.watcher.deactivated then
+            if targetSet[appName] then
+                escToggleHotkey:disable()
+            end
+        end
     end)
-    appFilter:subscribe(hs.window.filter.windowUnfocused, function()
-        escToggleHotkey:disable()
-    end)
+    appWatcher:start()
 
     local currentApp = hs.application.frontmostApplication()
     if currentApp and targetSet[currentApp:name()] then
         escToggleHotkey:enable()
     end
 
-    return escToggleHotkey, appFilter
+    return escToggleHotkey, appWatcher
 end
 
 _G.escToggleManager = {

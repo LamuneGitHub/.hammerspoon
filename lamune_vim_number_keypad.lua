@@ -34,7 +34,8 @@ local keyMappings = {
 -- 내부 키 바인딩 활성화 / 비활성화 (다른 모드에 대한 의존성 제거)
 
 local function loadMode()
-    loadKeyBinding(keyMappings, activeBindings)
+    -- 로딩 시 불필요한 등록/해제 방지를 위해 비활성 상태로 생성
+    loadKeyBinding(keyMappings, activeBindings, false)
 end
 
 local function enterKeypadMode()
@@ -89,4 +90,4 @@ hs.hotkey.bind({"shift"}, "f13", toggleMode_Keypad)
 hs.hotkey.bind({}, "f15", toggleMode_Keypad)
 
 loadMode()
-exitKeypadMode()
+curStates.keypad_Mode = false

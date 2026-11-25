@@ -187,7 +187,7 @@ end
 -- 키 더블 클릭 감지 등록
 keyDown_checkDoublePress = hs.eventtap.new({hs.eventtap.event.types.keyDown}, checkDoublePress)
 keyDown_checkDoublePress:start()
-flagsChanged_checkDoublePress  = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, checkDoublePress):start()
+flagsChanged_checkDoublePress = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, checkDoublePress)
 flagsChanged_checkDoublePress:start()
 
 --------------------------------------------------------------------------------
