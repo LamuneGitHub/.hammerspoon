@@ -15,8 +15,8 @@ require('lamune_function')               -- 실행하고자 하는 특수 기능
 require('lamune_modifier')               -- 세부(왼/오 Modifier/ 다중클릭) 기능 구현
 
 -- vim 키 / 숫자 키패드 모드
-require('lamune_vim_simple')             -- 커서 이동 모드 ("cursor")
-require('lamune_vim_number_keypad')      -- 숫자 키패드 모드 ("keypad")
+require('lamune_cursor_mode')             -- 커서 이동 모드 ("cursor")
+require('lamune_numKeyPad_mode')        -- 숫자 키패드 모드 ("numKeyPad")
 
 -- 파일 관리 모드
 local quickFiler = require('quick_filer') -- 파일 복사, 이동, 삭제 ("filer")

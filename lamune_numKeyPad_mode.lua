@@ -53,9 +53,9 @@ local function exitKeypadMode()
 end
 
 ------------------------------------------------------------------------
--- ModeManager 등록 ("keypad")
+-- ModeManager 등록 ("numKeyPad")
 
-ModeManager.register("keypad", {
+ModeManager.register("numKeyPad", {
     label = "Keypad 🇺🇸 ABC",
     color = GREEN,
     forceEnglish = true, -- 진입 시 영문 입력기 자동 전환
@@ -67,11 +67,11 @@ ModeManager.register("keypad", {
 -- 기존 전역 함수 호환 유지 (외부에서 직접 호출 시에도 ModeManager 경유)
 
 function enableMode_Keypad()
-    ModeManager.switch("keypad")
+    ModeManager.switch("numKeyPad")
 end
 
 function disableMode_Keypad()
-    if ModeManager.isMode("keypad") then
+    if ModeManager.isMode("numKeyPad") then
         ModeManager.switch("eng", { force = true })
     else
         exitKeypadMode()
@@ -79,7 +79,7 @@ function disableMode_Keypad()
 end
 
 local function toggleMode_Keypad()
-    ModeManager.toggle("keypad")
+    ModeManager.toggle("numKeyPad")
 end
 
 -------------------------------------------------------------------------
