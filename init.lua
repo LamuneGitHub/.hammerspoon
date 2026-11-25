@@ -34,3 +34,4 @@ quickFiler.init()
 
 
 
+require("ego_image_downloader")

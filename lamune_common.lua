@@ -650,3 +650,107 @@ function bindForApps(targetApps, mods, key, callback)
     hk:enable()
     return hk
 end
+
+
+-----------------------------------------------------------------------------
+
+-- URL 인코딩(한글, 공백 등)을 일반 경로 문자열로 디코딩
+function decodeURI(str)
+    return (str:gsub("%%(%x%x)", function(hex)
+        return string.char(tonumber(hex, 16))
+    end))
+end
+
+-- Finder에서 선택된 파일 또는 현재 폴더 경로 가져오기
+function getFinderPath()
+    local script = [[
+        tell application "Finder"
+            set sel to selection
+            if (count of sel) > 0 then
+                set paths to {}
+                repeat with f in sel
+                    set end of paths to POSIX path of (f as alias)
+                end repeat
+                set AppleScript's text item delimiters to linefeed
+                return paths as text
+            else
+                try
+                    return POSIX path of (target of front window as alias)
+                on error
+                    return POSIX path of (path to desktop)
+                end try
+            end if
+        end tell
+    ]]
+    local ok, result = hs.osascript.applescript(script)
+    if ok and result and result ~= "" then
+        return result
+    end
+    return nil
+end
+
+-- 일반 앱의 AXDocument 속성에서 경로 가져오기
+function getAXDocumentPath(app)
+    local axApp = hs.axuielement.applicationElement(app)
+    if not axApp then return nil end
+
+    local axWin = axApp:attributeValue("AXFocusedWindow")
+    if not axWin then return nil end
+
+    local doc = axWin:attributeValue("AXDocument")
+    if doc and type(doc) == "string" and doc ~= "" then
+        local path = doc:gsub("^file://localhost", ""):gsub("^file://", "")
+        return decodeURI(path)
+    end
+    return nil
+end
+
+-- 현재 활성화된 앱의 파일/폴더 경로를 통합 반환
+function getActiveAppDocumentPath()
+    local app = hs.application.frontmostApplication()
+    if not app then return nil end
+
+    local path = (app:bundleID() == "com.apple.finder")
+        and getFinderPath()
+        or getAXDocumentPath(app)
+
+    if path then
+        return path:gsub("%s+$", "")
+    end
+    return nil
+
+    -- -- 1. Finder가 활성화된 경우: 현재 선택된 파일 경로 가져오기
+    -- if appName == "Finder" then
+    --     local script = [[
+    --         tell application "Finder"
+    --             set sel to selection
+    --             if (count of sel) > 0 then
+    --                 return POSIX path of (item 1 of sel as alias)
+    --             end if
+    --         end tell
+    --     ]]
+    --     local ok, result = hs.osascript.applescript(script)
+    --     if ok and result ~= "" then
+    --         filePath = result
+    --     end
+    -- else
+    --     -- 2. 그 외 모든 문서 기반 앱: Hammerspoon 네이티브 AX API로 즉시 경로 추출 (AppleScript 불필요)
+    --     local win = hs.window.focusedWindow()
+    --     if win then
+    --         local axWin = hs.axuielement.windowElement(win)
+    --         if axWin then
+    --             local docURL = axWin:attributeValue("AXDocument")
+    --             if docURL then
+    --                 filePath = hs.http.urlParts(docURL).path
+    --                 -- URL 인코딩(한글/공백 등) 디코딩 처리
+    --                 filePath = string.gsub(filePath, "%%(%x%x)", function(h)
+    --                     return string.char(tonumber(h, 16))
+    --                 end)
+    --             end
+    --         end
+    --     end
+    -- end
+
+    -- return filePath
+end
+

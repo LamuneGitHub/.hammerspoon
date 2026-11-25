@@ -1,20 +1,28 @@
 -- ============================================================================
--- 파일명: ego_image_downloader.lua
+-- 파일명: ego_image_downloader.lua (v14)
 -- 적용 방법:
 --   ~/.hammerspoon/ego_image_downloader.lua 에 저장 후
 --   ~/.hammerspoon/init.lua 에 require("ego_image_downloader") 추가
 -- ============================================================================
 
 local baseDir     = os.getenv("HOME") .. "/Documents/$shell/ego_image_downloader"
-local scriptPath  = baseDir .. "/ego_image_downloader.py"
-local listFile    = baseDir .. "/download_url_list.txt"
-local historyFile = baseDir .. "/download_url_history.txt"
-local pidFile     = "/tmp/ego_image_downloader.pid"
+local managerPy   = baseDir .. "/ego_manager.py"
+local listFile    = baseDir .. "/download_url_list.ini"
+local historyFile = baseDir .. "/download_url_history.log"
+local workingFile = baseDir .. "/download_working_list.log"
+local pidFile     = "/tmp/ego_image_downloader_manager.pid"
+local stopFlag    = "/tmp/ego_image_downloader.stop"
 local delimiter   = "_:::_"
 
 local pythonBin = os.getenv("HOME") .. "/venv_lamune/bin/python3"
 if hs.fs.attributes(pythonBin) == nil then
     pythonBin = "/usr/bin/python3"
+end
+
+-- 줄 앞의 '(중지-요청) ', '(중지-에러) ', '(완료) ' 접두사를 제거하고 순수 URL 추출
+local function extractPureUrl(line)
+    local cleaned = line:gsub("^%s*%((.-)%)%s*", "")
+    return cleaned:match("^(%S+)")
 end
 
 local function getChromeTabInfo()
@@ -52,7 +60,7 @@ local function urlExistsInFile(filePath, targetUrl)
     local f = io.open(filePath, "r")
     if not f then return false end
     for line in f:lines() do
-        local pure = line:match("^(%S+)")
+        local pure = extractPureUrl(line)
         if pure == targetUrl then
             f:close()
             return true
@@ -90,7 +98,7 @@ local function prependHistory(filePath, entryText, pureUrl)
     local f = io.open(filePath, "r")
     if f then
         for line in f:lines() do
-            local existingPure = line:match("^(%S+)")
+            local existingPure = extractPureUrl(line)
             if existingPure and existingPure ~= pureUrl then
                 table.insert(lines, line)
             end
@@ -107,7 +115,22 @@ local function prependHistory(filePath, entryText, pureUrl)
     end
 end
 
--- [단축키 1] Cmd + Ctrl + ' : Chrome URL + 페이지 제목 대기열 추가 및 다운로더 실행
+local function isManagerRunning()
+    local f = io.open(pidFile, "r")
+    if not f then return nil end
+    local pid = f:read("*a"):match("(%d+)")
+    f:close()
+    if not pid then return nil end
+    local _, status = hs.execute("kill -0 " .. pid .. " 2>/dev/null")
+    if status then
+        return pid
+    else
+        os.remove(pidFile)
+        return nil
+    end
+end
+
+-- [단축키 1] Cmd + Ctrl + ' : Chrome URL + 페이지 제목 대기열(download_url_list.ini) 추가 및 매니저 실행
 hs.hotkey.bind({"cmd", "ctrl"}, "'", function()
     local targetUrl, targetTitle = getChromeTabInfo()
     if not targetUrl or not string.match(targetUrl, "^https?://") then
@@ -115,9 +138,11 @@ hs.hotkey.bind({"cmd", "ctrl"}, "'", function()
         return
     end
 
-    if urlExistsInFile(listFile, targetUrl) then
-        hs.alert.show("이미 대기열(download_url_list.txt)에 등록된 URL입니다.")
-        hs.task.new(pythonBin, nil, {scriptPath}):start()
+    if urlExistsInFile(listFile, targetUrl) or urlExistsInFile(workingFile, targetUrl) then
+        hs.alert.show("이미 대기열 또는 작업 목록에 등록된 URL입니다.")
+        if not isManagerRunning() then
+            hs.task.new(pythonBin, nil, {managerPy}):start()
+        end
         return
     end
 
@@ -126,7 +151,7 @@ hs.hotkey.bind({"cmd", "ctrl"}, "'", function()
         local displayTitle = (targetTitle and targetTitle ~= "") and ("\n제목: " .. targetTitle) or ""
         local btn = hs.dialog.blockAlert(
             "중복 URL 경고",
-            "이미 다운로드 히스토리(download_url_history.txt)에 존재하는 URL입니다.\n그래도 다시 진행하시겠습니까?" .. displayTitle .. "\nURL: " .. targetUrl,
+            "이미 다운로드 히스토리(download_url_history.log)에 존재하는 URL입니다.\n그래도 다시 진행하시겠습니까?" .. displayTitle .. "\nURL: " .. targetUrl,
             "진행",
             "취소"
         )
@@ -143,25 +168,34 @@ hs.hotkey.bind({"cmd", "ctrl"}, "'", function()
     appendLineToFile(listFile, formatEntry(targetUrl, targetTitle, nil))
     hs.alert.show("대기열 추가: " .. (targetTitle ~= "" and targetTitle or targetUrl))
 
-    local args = {scriptPath}
-    if isDuplicateHistory then
-        table.insert(args, "--restart-dup")
+    if not isManagerRunning() then
+        local args = {managerPy}
+        if isDuplicateHistory then
+            table.insert(args, "--restart-dup-url")
+            table.insert(args, targetUrl)
+        end
+        hs.task.new(pythonBin, nil, args):start()
     end
-    hs.task.new(pythonBin, nil, args):start()
 end)
 
--- [단축키 2] Cmd + Ctrl + P : 진행 중이면 중지 / 진행 중이 아니면 대기열에서 실행
+-- [단축키 2] Cmd + Ctrl + P : 진행 중이면 즉시 완전 중지 / 중지 상태면 대기열에서 실행
 hs.hotkey.bind({"cmd", "ctrl"}, "P", function()
-    local isRunning = (hs.fs.attributes(pidFile) ~= nil)
-    if isRunning then
-        hs.alert.show("다운로드 일시중지 요청...")
-        hs.task.new(pythonBin, nil, {scriptPath, "--toggle"}):start()
+    local pid = isManagerRunning()
+    if pid then
+        hs.alert.show("모든 다운로드 작업 즉시 중지 중...")
+        local f = io.open(stopFlag, "w")
+        if f then
+            f:write("stop")
+            f:close()
+        end
+        hs.execute("kill -TERM " .. pid .. " 2>/dev/null")
     else
         if not hasQueuedItems(listFile) then
-            hs.alert.show("대기열(download_url_list.txt)이 비어 있습니다.")
+            hs.alert.show("대기열(download_url_list.ini)이 비어 있습니다.")
             return
         end
+        os.remove(stopFlag)
         hs.alert.show("대기열에서 다운로드 시작...")
-        hs.task.new(pythonBin, nil, {scriptPath, "--toggle"}):start()
+        hs.task.new(pythonBin, nil, {managerPy}):start()
     end
 end)

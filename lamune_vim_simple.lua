@@ -65,7 +65,7 @@ local keyMappings = {
     {t="fnc", from = {{},"["}, to = function() -- ctrl + v 
         fastKeyStroke(mod.cmd, "v") 
     end}, 
-    {t="fnc", from = {{"cmd"},"["}, to = pasteLine },  -- 현재 줄에 클립보드 삽입
+    {t="fnc", from = {{"cmd"},"["}, to = pasteLine },  -- 현재 줄에 클립보드 내용 삽입
 
 
     ------------------------------------------------------------------------

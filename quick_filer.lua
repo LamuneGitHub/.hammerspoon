@@ -4,7 +4,11 @@ local iniPath = os.getenv("HOME") .. "/.hammerspoon/quick_filer.ini"
 local destinations = {}
 local destOrder = {}
 local showNotification = true
+local useParentBaseDir = false
+local useRootBaseDir = false
+local rootBaseDir = ""
 local undoStack = {}
+local lastSelectedDir = nil -- 마지막으로 선택/처리되었던 파일의 부모 폴더 경로 저장
 
 local isFileManageMode = false -- 파일 관리 모드 상태 플래그
 local overlayCanvas = nil
@@ -16,15 +20,18 @@ function M.openConfig()
     if not hs.fs.attributes(iniPath) then
         local defaultIni = [[
 [Destinations]
-; 형식: 할당키 = 경로 (절대경로 및 상대경로 모두 지원)
+// 형식: 할당키 = 경로 (절대경로 및 상대경로 모두 지원)
 1 = ~/Downloads/Sorted/Images
 2 = ~/Downloads/Sorted/Documents
 q = ./selected
 w = ./backup
 
 [Settings]
-; 실행 후 우측 상단 알림 표시 여부 (true / false)
+// 실행 후 우측 상단 알림 표시 여부 (true / false)
 show_notification = true
+useParentBaseDir = false
+useRootBaseDir = false
+rootBaseDir = ~/Downloads
 ]]
         local f = io.open(iniPath, "w")
         if f then
@@ -39,6 +46,12 @@ end
 function M.loadConfig()
     destinations = {}
     destOrder = {}
+    -- 리로드 시 기본값 초기화
+    showNotification = true
+    useParentBaseDir = false
+    useRootBaseDir = false
+    rootBaseDir = ""
+
     local file = io.open(iniPath, "r")
     if not file then
         hs.alert.show("quick_filer.ini 파일을 찾을 수 없습니다. 생성 후 엽니다.")
@@ -49,7 +62,8 @@ function M.loadConfig()
     local currentSection = ""
     for line in file:lines() do
         line = line:match("^%s*(.-)%s*$")
-        if line ~= "" and not line:match("^[;#]") then
+        -- '//'로 시작하는 줄만 주석으로 무시
+        if line ~= "" and not line:match("^//") then
             local section = line:match("^%[(.-)%]$")
             if section then
                 currentSection = section
@@ -62,8 +76,17 @@ function M.loadConfig()
                 end
             elseif currentSection == "Settings" then
                 local k, v = line:match("^(.-)%s*=%s*(.+)$")
-                if k == "show_notification" then
-                    showNotification = (v:lower() == "true")
+                if k and v then
+                    local keyLower = k:lower()
+                    if keyLower == "show_notification" then
+                        showNotification = (v:lower() == "true")
+                    elseif keyLower == "useparentbasedir" then
+                        useParentBaseDir = (v:lower() == "true")
+                    elseif keyLower == "userootbasedir" then
+                        useRootBaseDir = (v:lower() == "true")
+                    elseif keyLower == "rootbasedir" then
+                        rootBaseDir = v
+                    end
                 end
             end
         end
@@ -80,6 +103,22 @@ local function resolvePath(rawPath, baseDir)
     end
     path = path:gsub("/%./", "/"):gsub("//+", "/")
     return path
+end
+
+-- 상대경로 기준 디렉토리 결정 (우선순위: useRootBaseDir > useParentBaseDir > 현재 파일 폴더)
+local function getEffectiveBaseDir(currentFileDir)
+    if useRootBaseDir and rootBaseDir ~= "" then
+        local resolvedRoot = rootBaseDir:gsub("^~", os.getenv("HOME")):gsub("/+$", "")
+        return resolvedRoot ~= "" and resolvedRoot or "/"
+    elseif useParentBaseDir then
+        local parentOfCurrent = currentFileDir:match("^(.*)/[^/]+$")
+        if parentOfCurrent and parentOfCurrent ~= "" then
+            return parentOfCurrent
+        elseif currentFileDir:match("^/[^/]+$") then
+            return "/"
+        end
+    end
+    return currentFileDir
 end
 
 -- 2. 현재 선택/열람 중인 파일 추출
@@ -108,6 +147,9 @@ local function getSelectedFiles()
                 table.insert(files, (p:gsub("/$", "")))
             end
         end
+        if #files > 0 then
+            lastSelectedDir = files[1]:match("^(.*)/[^/]+$") or lastSelectedDir
+        end
         return files
     end
 
@@ -121,6 +163,7 @@ local function getSelectedFiles()
                 local decoded = hs.http.urlParts(docUrl).path
                 if decoded and hs.fs.attributes(decoded) then
                     table.insert(files, decoded)
+                    lastSelectedDir = decoded:match("^(.*)/[^/]+$") or lastSelectedDir
                     return files
                 end
             end
@@ -132,6 +175,7 @@ local function getSelectedFiles()
             possiblePath = possiblePath:match("^%s*(.-)%s*$")
             if hs.fs.attributes(possiblePath) then
                 table.insert(files, possiblePath)
+                lastSelectedDir = possiblePath:match("^(.*)/[^/]+$") or lastSelectedDir
                 return files
             end
         end
@@ -156,6 +200,10 @@ local function getSelectedFiles()
     end
     hs.pasteboard.writeAllData(prevContents)
 
+    if #files > 0 then
+        lastSelectedDir = files[1]:match("^(.*)/[^/]+$") or lastSelectedDir
+    end
+
     return files
 end
 
@@ -179,8 +227,9 @@ local function executeFileAction(mode, files, rawDestPath)
     local successCount = 0
 
     for _, src in ipairs(files) do
-        local parentDir = src:match("^(.*)/[^/]+$") or "."
+        local currentFileDir = src:match("^(.*)/[^/]+$") or "."
         local filename = src:match("([^/]+)$")
+        lastSelectedDir = currentFileDir
 
         if mode == "delete" then
             local trashDir = os.getenv("HOME") .. "/.Trash"
@@ -192,7 +241,8 @@ local function executeFileAction(mode, files, rawDestPath)
                 successCount = successCount + 1
             end
         else
-            local targetDir = resolvePath(rawDestPath, parentDir)
+            local baseDir = getEffectiveBaseDir(currentFileDir)
+            local targetDir = resolvePath(rawDestPath, baseDir)
             os.execute(string.format('mkdir -p %q', targetDir))
             local dst = getUniqueTargetPath(targetDir, filename)
 
@@ -240,6 +290,7 @@ function M.undoLastAction()
     local restored = 0
 
     for _, item in ipairs(last.items) do
+        lastSelectedDir = item.src:match("^(.*)/[^/]+$") or lastSelectedDir
         if last.mode == "move" or last.mode == "delete" then
             if hs.fs.attributes(item.dst) then
                 local ok = os.rename(item.dst, item.src)
@@ -256,6 +307,10 @@ function M.undoLastAction()
 
     local actionName = (last.mode == "move" and "이동") or (last.mode == "copy" and "복사") or "삭제"
     hs.alert.show(string.format("실행 취소: %s 복구 완료 (%d개)", actionName, restored), 1.5)
+
+    hs.timer.doAfter(0.1, function()
+        hs.eventtap.keyStroke({}, "left", 0)
+    end)
 end
 
 -- 5. 오버레이 닫기
@@ -346,8 +401,8 @@ local function showDestinationOverlay(mode, files)
     end
 
     local footerText = (mode == "view")
-        and "ESC 또는 [,]: 닫기  |  Cmd+Ctrl+[,]: 설정 파일(INI) 편집"
-        or "ESC: 취소  |  [,]: 설정 파일(INI) 편집"
+        and "ESC 또는 [m]: 닫기  |  Cmd+Ctrl+[m]: 설정 파일(INI) 편집"
+        or "ESC: 취소  |  [m]: 설정 파일(INI) 편집"
 
     overlayCanvas[idx] = {
         type = "text",
@@ -357,37 +412,21 @@ local function showDestinationOverlay(mode, files)
         frame = { x = 20, y = height - 26, w = width - 40, h = 20 }
     }
 
-
-    -- overlayCanvas:level(hs.canvas.windowLevels.overlay)
-    -- overlayCanvas:show()
-
-    -- 수정 코드: 전체 화면(Full Screen) Space 위에도 강제로 표시
-    -- overlayCanvas:behavior(
-    --     hs.canvas.windowBehaviors.canJoinAllSpaces +
-    --     hs.canvas.windowBehaviors.fullScreenAuxiliary
-    -- )
     overlayCanvas:behavior({"canJoinAllSpaces", "fullScreenAuxiliary"})
-    overlayCanvas:level(hs.canvas.windowLevels.popUpMenu)
-
-
     overlayCanvas:level(hs.canvas.windowLevels.screenSaver)
     overlayCanvas:show()
-
-
-
 
     overlayKeyTap = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(event)
         local keyCode = event:getKeyCode()
         local char = (event:getCharacters(true) or ""):lower()
 
-        -- ESC 또는 조회 모드일 때 ',' 누르면 창 닫기
-        if keyCode == 53 or (mode == "view" and char == ",") then
+        if keyCode == 53 or (mode == "view" and char == "m") then
             closeOverlay()
             return true
         end
 
         if mode ~= "view" then
-            if char == "," then
+            if char == "m" then
                 closeOverlay()
                 M.openConfig()
                 return true
@@ -409,6 +448,8 @@ end
 -- 트리거 함수 (rawDestPath가 전달되면 오버레이 없이 즉시 실행)
 function M.trigger(mode, rawDestPath)
     hs.timer.doAfter(0, function()
+        -- 실행 시점마다 최신 INI 설정(플래그 포함) 반영
+        M.loadConfig()
         local files = getSelectedFiles()
         if #files == 0 then
             hs.alert.show("선택된 파일이 없습니다.", 1.0)
@@ -431,13 +472,15 @@ function M.toggleMode()
     closeOverlay()
     if isFileManageMode then
         M.loadConfig()
-        hs.alert.show("🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [,]: 목록", 2.0)
+        hs.alert.show("🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [m]: 목록", 2.0)
+        enable_munebar_show(BROWN)
     else
         hs.alert.show("⚪️ 일반 상태 (파일 관리 모드 OFF)", 1.5)
+        disable_menubar_show()
     end
 end
 
--- 물리 keyCode를 문자(소문자)로 변환하는 헬퍼 (Shift 조합 시에도 정확한 키 매칭 보장)
+-- 물리 keyCode를 문자(소문자)로 변환하는 헬퍼
 local function getBaseCharFromKeyCode(keyCode)
     local keyStr = hs.keycodes.map[keyCode]
     if keyStr and #keyStr == 1 then
@@ -445,7 +488,6 @@ local function getBaseCharFromKeyCode(keyCode)
     end
     return nil
 end
-
 
 -- 현재 선택/열람 중인 파일을 Finder에서 선택된 상태로 열기
 function M.revealInFinder()
@@ -456,16 +498,13 @@ function M.revealInFinder()
             return
         end
 
-        -- 파일이 1개인 경우: 가장 빠르고 확실한 macOS 기본 open -R 사용
         if #files == 1 then
             os.execute(string.format('open -R %q', files[1]))
             return
         end
 
-        -- 파일이 여러 개인 경우: AppleScript로 Finder에서 다중 선택 상태로 열기
         local posixItems = {}
         for _, path in ipairs(files) do
-            -- 작은따옴표 및 큰따옴표 이스케이프 처리
             local escaped = path:gsub('\\', '\\\\'):gsub('"', '\\"')
             table.insert(posixItems, string.format('(POSIX file "%s")', escaped))
         end
@@ -481,6 +520,28 @@ function M.revealInFinder()
     end)
 end
 
+-- 마지막으로 선택되었던 파일이 있던 폴더를 Finder에서 열기
+function M.openLastFolderInFinder()
+    hs.timer.doAfter(0, function()
+        local targetDir = lastSelectedDir
+
+        -- lastSelectedDir가 비어있다면 undoStack의 마지막 이력에서 추출
+        if not targetDir and #undoStack > 0 then
+            local lastItem = undoStack[#undoStack].items[1]
+            if lastItem and lastItem.src then
+                targetDir = lastItem.src:match("^(.*)/[^/]+$")
+            end
+        end
+
+        if not targetDir or not hs.fs.attributes(targetDir) then
+            hs.alert.show("열 수 있는 마지막 폴더 기록이 없습니다.", 1.2)
+            return
+        end
+
+        os.execute(string.format('open %q', targetDir))
+    end)
+end
+
 -- 7. OS 저수준 전역 단축키 바인딩
 function M.init()
     M.loadConfig()
@@ -488,7 +549,6 @@ function M.init()
         globalHotkeyTap:stop()
     end
 
-    -- keyCode: 44 = '/', 43 = ',', 105 = 'F13'
     globalHotkeyTap = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(event)
         if overlayCanvas then return false end
 
@@ -496,11 +556,10 @@ function M.init()
         local keyCode = event:getKeyCode()
 
         -- [A] Cmd + Ctrl + Alt + F13 : 파일 관리 모드 <-> 일반 상태 토글
-        if flags.cmd and flags.ctrl and flags.alt and not flags.shift and keyCode == 105 then
+        if flags.cmd and not flags.ctrl and flags.alt and not flags.shift and keyCode == 105 then
             hs.timer.doAfter(0, function() M.toggleMode() end)
             return true
         end
-
 
         -- [B] 공통 조합 단축키 (Cmd + Ctrl 기반)
         if flags.cmd and flags.ctrl then
@@ -515,7 +574,7 @@ function M.init()
                     M.trigger("delete", nil)
                     return true
                 end
-            elseif keyCode == hs.keycodes.map[","] and not flags.shift and not flags.alt then
+            elseif keyCode == hs.keycodes.map["m"] and not flags.shift and not flags.alt then
                 hs.timer.doAfter(0, function() M.openConfig() end)
                 return true
             elseif keyCode == hs.keycodes.map["o"] and not flags.shift and not flags.alt then
@@ -529,22 +588,29 @@ function M.init()
 
         -- [C] "파일 관리 모드" 활성화 시 단독 키 처리
         if isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt then
-
-            -- 'o' 단독 입력 -> 즉시 삭제
             if keyCode == 31 and not flags.shift then
                 M.revealInFinder()
                 return true
             end
 
-            -- '/' 단독 입력 -> 즉시 삭제
+            -- 'p' 단독 입력 -> 마지막 선택되었던 파일의 폴더를 Finder에서 열기
+            if keyCode == hs.keycodes.map["p"] and not flags.shift then
+                M.openLastFolderInFinder()
+                return true
+            end
+
             if keyCode == 44 and not flags.shift then
                 M.trigger("delete", nil)
                 return true
             end
 
-            -- ',' 단독 입력 -> 설정된 키와 목적지 오버레이 표시
-            if keyCode == 43 and not flags.shift then
+            if keyCode == hs.keycodes.map["m"] and not flags.shift then
                 hs.timer.doAfter(0, function() showDestinationOverlay("view", {}) end)
+                return true
+            end
+
+            if keyCode == hs.keycodes.map["delete"] then
+                hs.timer.doAfter(0, function() M.undoLastAction() end)
                 return true
             end
 
@@ -553,10 +619,8 @@ function M.init()
             if baseChar and destinations[baseChar] then
                 local targetRaw = destinations[baseChar]
                 if flags.shift then
-                    -- Shift + 설정키 -> 즉시 복사
                     M.trigger("copy", targetRaw)
                 else
-                    -- 설정키 단독 -> 즉시 이동
                     M.trigger("move", targetRaw)
                 end
                 return true
@@ -568,6 +632,5 @@ function M.init()
 
     globalHotkeyTap:start()
 end
-
 
 return M

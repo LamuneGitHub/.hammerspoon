@@ -14,8 +14,9 @@
 
 -- app관련 편의 기능 ( 특정 앱 에서만 동작 ) 단축키 맵핑
 bindForApps({ "chrome", "ego" }, {"cmd", "ctrl"}, "/", download_image)    -- 웹 이미지 다운로드
-bindForApps({ "Obsidian" }, {"cmd", "shift"}, "/", obsidian_fn01)    -- 웹 주소 입력
+bindForApps({ "Obsidian" }, {"cmd", "shift"}, "p", obsidian_fn01)    -- 웹 주소 입력
 bindForApps({ "Obsidian" }, {"cmd", "shift"}, ".", obsidian_fn02)    -- bsidian local 이미지 -> 웹이미지
+bindForApps({ "Finder" }, {}, "escape", function()   toggleApplication("Finder") end )    
 
 
 
@@ -41,10 +42,10 @@ local keyMappings = {
 
 
     -- 특수키 할당
-    {t="app", from = {{'cmd','alt'},"/"},       to = "ForkLift" },          -- File manage 
+    {t="app", from = {{'cmd','alt'},"/"},       to = "Nimble Commander" },          -- File manage 
     {t="app", from = {{'cmd','alt'},"."},       to = "Finder" },            -- 
     {t="app", from = {{'cmd','alt'},","},       to = "qView" },      -- 
-    --{t="app", from = {{'cmd','alt'},"esc"},       to = "None" },          -- 프로그램 강제 종료
+    --{t="app", from = {{'cmd','alt'},"escape"},       to = "None" },          -- 프로그램 강제 종료
     -- {t="app", from = {{'cmd','alt'},"a"},       to = "Activity Monitor" },  -- 활성상태 모니터
     -- {t="app", from = {{'cmd','alt'},"a"},       to = "활성 상태 보기" },  -- 활성상태 모니터
     {t="fnc", from = {{'cmd','alt'},"F12"},       to = toggleSystemMute },  -- 소리 묵음 toggle 

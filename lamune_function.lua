@@ -337,47 +337,182 @@ end
 
 ------------------------------------
 
+-- Cmd + Ctrl + F : 현재 선택 파일의 경로에서 Lokii 호출
+--   현재 폴더 경로를 작은따옴표('...')로 감싸서 입력
+hs.hotkey.bind({"cmd", "ctrl"}, "f", function()
+    local finderScript = [[
+        tell application "Finder"
+            set sel to selection
+            if (count of sel) > 0 then
+                set targetItem to item 1 of sel as alias
+                set itemKind to kind of (item 1 of sel)
+                if itemKind is "폴더" or itemKind is "Folder" or itemKind is "디스크" or itemKind is "Volume" then
+                    set targetPath to POSIX path of targetItem
+                else
+                    set targetPath to POSIX path of (container of (item 1 of sel) as alias)
+                end if
+            else
+                if (count of windows) > 0 then
+                    set targetPath to POSIX path of (target of front window as alias)
+                else
+                    set targetPath to POSIX path of (path to desktop)
+                end if
+            end if
+        end tell
+        return targetPath
+    ]]
 
+    local ok, targetPath = hs.osascript.applescript(finderScript)
+    if not ok or not targetPath or targetPath == "" then
+        hs.alert.show("경로를 가져올 수 없습니다.")
+        return
+    end
+
+    -- AppleScript 반환값 끝에 붙을 수 있는 줄바꿈 제거 후 작은따옴표로 감싸기
+    targetPath = targetPath:gsub("%s+$", "")
+    local quotedPath = "'" .. targetPath .. "' "
+
+    -- 1. Lokii 앱 실행 및 활성화
+    hs.application.launchOrFocus("Lokii")
+
+    -- 2. 앱 창이 포커스를 받을 때까지 잠시 대기 후 붙여넣기 실행
+    hs.timer.doAfter(0.5, function()
+        local prevClipboard = hs.pasteboard.getContents()
+        hs.pasteboard.setContents(quotedPath)
+        hs.eventtap.keyStroke({"cmd"}, "v")
+
+        hs.timer.doAfter(0.2, function()
+            if prevClipboard then
+                hs.pasteboard.setContents(prevClipboard)
+            end
+        end)
+    end)
+end)
+
+-- Cmd + Ctrl + U :  현재 파일의 폴더 위치에서 새 Terminal 창 열기
+hs.hotkey.bind({"cmd", "ctrl"}, "u", function()
+    local script = [[
+        tell application "Finder"
+            set sel to selection
+            if (count of sel) > 0 then
+                set targetItem to item 1 of sel as alias
+                set itemKind to kind of (item 1 of sel)
+                if itemKind is "폴더" or itemKind is "Folder" or itemKind is "디스크" or itemKind is "Volume" then
+                    set targetPath to POSIX path of targetItem
+                else
+                    set targetPath to POSIX path of (container of (item 1 of sel) as alias)
+                end if
+            else
+                if (count of windows) > 0 then
+                    set targetPath to POSIX path of (target of front window as alias)
+                else
+                    set targetPath to POSIX path of (path to desktop)
+                end if
+            end if
+        end tell
+        return targetPath
+    ]]
+
+    local ok, targetPath = hs.osascript.applescript(script)
+    if not ok or not targetPath or targetPath == "" then
+        hs.alert.show("경로를 가져올 수 없습니다.")
+        return
+    end
+
+    -- 공백이나 특수문자([], ★, ● 등)가 포함된 경로를 안전하게 이스케이프 처리
+    local escapedPath = targetPath:gsub("'", "'\\''")
+    local cmd = string.format([[osascript -e 'tell application "Terminal" to do script "cd '\''%s'\''"' -e 'tell application "Terminal" to activate']], escapedPath)
+    
+    hs.execute(cmd)
+end)
+
+-- Cmd + Ctrl + I : 현재 Finder 선택 항목의 폴더 위치에서 새 iTerm 창 열기
+hs.hotkey.bind({"cmd", "ctrl"}, "i", function()
+    local finderScript = [[
+        tell application "Finder"
+            set sel to selection
+            if (count of sel) > 0 then
+                set targetItem to item 1 of sel as alias
+                set itemKind to kind of (item 1 of sel)
+                if itemKind is "폴더" or itemKind is "Folder" or itemKind is "디스크" or itemKind is "Volume" then
+                    set targetPath to POSIX path of targetItem
+                else
+                    set targetPath to POSIX path of (container of (item 1 of sel) as alias)
+                end if
+            else
+                if (count of windows) > 0 then
+                    set targetPath to POSIX path of (target of front window as alias)
+                else
+                    set targetPath to POSIX path of (path to desktop)
+                end if
+            end if
+        end tell
+        return targetPath
+    ]]
+
+    local ok, targetPath = hs.osascript.applescript(finderScript)
+    if not ok or not targetPath or targetPath == "" then
+        hs.alert.show("경로를 가져올 수 없습니다.")
+        return
+    end
+
+    -- AppleScript 문자열 내부에서 안전하게 쓰기 위해 백슬래시와 큰따옴표 이스케이프 처리
+    local escapedPath = targetPath:gsub("\\", "\\\\"):gsub('"', '\\"')
+
+    local itermScript = string.format([[
+        tell application "iTerm"
+            create window with default profile
+            tell current session of current window
+                write text "cd \"%s\" && clear"
+            end tell
+            activate
+        end tell
+    ]], escapedPath)
+
+    hs.osascript.applescript(itermScript)
+end)
 
 -- 모든 프로그램에서 현재 창(또는 Finder 선택 파일)을 VS Code로 즉시 열기
-hs.hotkey.bind({"cmd", "shift"}, "E", function()
-    local frontApp = hs.application.frontmostApplication()
-    if not frontApp then return end
+hs.hotkey.bind({"cmd", "ctrl"}, "E", function()
+    -- local frontApp = hs.application.frontmostApplication()
+    -- if not frontApp then return end
 
-    local appName = frontApp:name()
-    local filePath = nil
+    -- local appName = frontApp:name()
+    -- local filePath = nil
 
-    -- 1. Finder가 활성화된 경우: 현재 선택된 파일 경로 가져오기
-    if appName == "Finder" then
-        local script = [[
-            tell application "Finder"
-                set sel to selection
-                if (count of sel) > 0 then
-                    return POSIX path of (item 1 of sel as alias)
-                end if
-            end tell
-        ]]
-        local ok, result = hs.osascript.applescript(script)
-        if ok and result ~= "" then
-            filePath = result
-        end
-    else
-        -- 2. 그 외 모든 문서 기반 앱: Hammerspoon 네이티브 AX API로 즉시 경로 추출 (AppleScript 불필요)
-        local win = hs.window.focusedWindow()
-        if win then
-            local axWin = hs.axuielement.windowElement(win)
-            if axWin then
-                local docURL = axWin:attributeValue("AXDocument")
-                if docURL then
-                    filePath = hs.http.urlParts(docURL).path
-                    -- URL 인코딩(한글/공백 등) 디코딩 처리
-                    filePath = string.gsub(filePath, "%%(%x%x)", function(h)
-                        return string.char(tonumber(h, 16))
-                    end)
-                end
-            end
-        end
-    end
+    -- -- 1. Finder가 활성화된 경우: 현재 선택된 파일 경로 가져오기
+    -- if appName == "Finder" then
+    --     local script = [[
+    --         tell application "Finder"
+    --             set sel to selection
+    --             if (count of sel) > 0 then
+    --                 return POSIX path of (item 1 of sel as alias)
+    --             end if
+    --         end tell
+    --     ]]
+    --     local ok, result = hs.osascript.applescript(script)
+    --     if ok and result ~= "" then
+    --         filePath = result
+    --     end
+    -- else
+    --     -- 2. 그 외 모든 문서 기반 앱: Hammerspoon 네이티브 AX API로 즉시 경로 추출 (AppleScript 불필요)
+    --     local win = hs.window.focusedWindow()
+    --     if win then
+    --         local axWin = hs.axuielement.windowElement(win)
+    --         if axWin then
+    --             local docURL = axWin:attributeValue("AXDocument")
+    --             if docURL then
+    --                 filePath = hs.http.urlParts(docURL).path
+    --                 -- URL 인코딩(한글/공백 등) 디코딩 처리
+    --                 filePath = string.gsub(filePath, "%%(%x%x)", function(h)
+    --                     return string.char(tonumber(h, 16))
+    --                 end)
+    --             end
+    --         end
+    --     end
+    -- end
+
+    local filePath = getActiveAppDocumentPath()
 
     -- 3. 경로가 확인되면 VS Code로 즉시 실행
     if filePath and filePath ~= "" then
@@ -386,3 +521,58 @@ hs.hotkey.bind({"cmd", "shift"}, "E", function()
         hs.alert.show("열 수 있는 파일 경로가 없는 창입니다 (" .. appName .. ")", 1.2)
     end
 end)
+
+
+-- Ctrl + Shift + C 단축키 바인딩
+hs.hotkey.bind({"cmd", "shift"}, "c", function()
+    local path = getActiveAppDocumentPath()
+    if path then
+        hs.pasteboard.setContents(path)
+        hs.alert.show("경로 복사됨:\n" .. path, 1.5)
+    else
+        hs.alert.show("현재 창에서 파일/폴더 경로를 찾을 수 없습니다.", 1.5)
+    end
+end)
+
+----------------------------------------------------------------------
+
+function bindEscToToggleApp(appNames)
+    local targetSet = {}
+    for _, name in ipairs(appNames) do
+        targetSet[name] = true
+    end
+
+    local escToggleHotkey = hs.hotkey.new({}, "escape", function()
+        local app = hs.application.frontmostApplication()
+        if app and targetSet[app:name()] then
+            local appName = app:name()
+            -- 정의해 두신 toggleApplication 함수에 앱 이름을 전달하여 호출
+            toggleApplication(appName)
+        end
+    end)
+
+    local appFilter = hs.window.filter.new(appNames)
+    appFilter:subscribe(hs.window.filter.windowFocused, function()
+        escToggleHotkey:enable()
+    end)
+    appFilter:subscribe(hs.window.filter.windowUnfocused, function()
+        escToggleHotkey:disable()
+    end)
+
+    local currentApp = hs.application.frontmostApplication()
+    if currentApp and targetSet[currentApp:name()] then
+        escToggleHotkey:enable()
+    end
+
+    return escToggleHotkey, appFilter
+end
+
+_G.escToggleManager = {
+    bindEscToToggleApp({
+        "qView",
+        "Markdown Peek",
+        "Preview",
+    })
+}
+
+
