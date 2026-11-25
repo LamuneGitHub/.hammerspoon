@@ -391,14 +391,14 @@ end
 function enableCursorMode()
     curStates.cursorMode = true
 
-    enable_munebar_show(RED)
+    enable_menubar_show(RED)
 
     for _, bind in ipairs(activeBindings) do
         bind:enable()
     end   
 
     -- 영문 입력 모드로 변경
-    change_eng_withoutCursorModeChange()
+    setEnglishRaw()
 end
 
 -- Function to disable cursor mode key mappings

@@ -1,141 +1,116 @@
 -------------------------------------------------------------------------
---입력 소스가 변경될 때마다 사용자에게 이를 알리는 기능을 구현합니다.
--- 오른쪽 cmd 더블클릭 = 영문
--- 오른쪽 alt 더블클릭 = 한글 
--- shift + space 한영 전환
-
-
+-- 한/영 입력 모드 정의 및 ModeManager 등록
+-- 오른쪽 cmd 더블클릭 = 영문 (change_eng)
+-- 오른쪽 alt 더블클릭 = 한글 (change_kor)
 -------------------------------------------------------------------------
---• 입력 소스 정의:
---• inputSource 테이블은 영어와 두 가지 한국어 입력 소스의 고유 식별자를 저장합니다.
+
 local inputSource = {
     english = "com.apple.keylayout.ABC",
     korean1 = "com.apple.inputmethod.Korean.2SetKorean",
     korean2 = "com.navilera.inputmethod.NavilIME",
 }
 
---• IM_alert 함수:
---• 현재 입력 소스를 확인하고, 해당 소스에 따라 적절한 언어 표시를 설정합니다.
---• 동일한 입력 소스에서 반복해서 알림을 표시하지 않도록 합니다.
---• 새로운 입력 소스를 확인할 때마다 이전 알림을 닫고 새 알림을 표시합니다.
-curStates.language = ""
+-- 저수준 입력 소스 전환 헬퍼 (모드 전환 없이 입력기만 변경)
+local function setEnglishRaw()
+    hs.keycodes.currentSourceID(inputSource.english)
+    curStates.language = " 🇺🇸 ABC "
+end
+
+local function setKoreanRaw()
+    hs.keycodes.currentSourceID(inputSource.korean1)
+    curStates.language = " 🇰🇷 가나다1 "
+end
+
+-- -- 기존 코드 하위 호환용 전역 함수 유지
+-- change_eng_withoutCursorModeChange = setEnglishRaw
+-- change_kor_withoutCursorModeChange = setKoreanRaw
+
+-------------------------------------------------------------------------
+-- ModeManager 등록: 영문("eng") / 한글("kor")
+-------------------------------------------------------------------------
+
+ModeManager.register("eng", {
+    label = "Typing 🇺🇸 ABC",
+    color = nil, -- 영문 기본 상태는 메뉴바 색상 OFF
+    forceEnglish = false,
+    onEnter = function()
+        setEnglishRaw()
+    end,
+    onExit = function()
+        -- 별도 정리 작업 없음
+    end,
+})
+
+ModeManager.register("kor", {
+    label = "Typing 🇰🇷 가나다",
+    color = BLUE, -- 한글 상태는 파란색 메뉴바 표시
+    forceEnglish = false,
+    onEnter = function()
+        -- macOS 한영 전환 누락 버그 우회용 반복 전환 유지
+        setEnglishRaw()
+        setKoreanRaw()
+        setEnglishRaw()
+        setKoreanRaw()
+        setEnglishRaw()
+        setKoreanRaw()
+    end,
+    onExit = function()
+        -- 별도 정리 작업 없음
+    end,
+})
+
+-------------------------------------------------------------------------
+-- 외부(macOS 시스템 등)에서 입력 소스가 변경되었을 때 감지
+-------------------------------------------------------------------------
 function IM_alert()
-    -- print( "IM_alert" .. tostring(cursorMode))
-    -- -- 언어가 변경된 경우는 문자 입력을 위한 경우 이므로 cursor모드를 해제 
-    -- !예상과 달리 IM_alert이벤트가 시도때도 없이 호출됨
-    -- disableCursorMode()
+    -- ModeManager가 의도적으로 모드를 전환하는 중이면 무시 (충돌 방지)
+    if ModeManager.isTransitioning() then
+        return
+    end
+
+    -- 특수 모드(cursor, keypad, filer)가 활성화된 상태에서는 무시
+    local cur = ModeManager.getCurrentMode()
+    if cur ~= "eng" and cur ~= "kor" then
+        return
+    end
 
     local current = hs.keycodes.currentSourceID()
-    
-    if current == inputSource.korean1 then
-        curStates.language = ' 🇰🇷 가나다1 '
-    elseif current == inputSource.korean2 then
-        curStates.language = ' 🇰🇷 가나다2 '
+    if current == inputSource.korean1 or current == inputSource.korean2 then
+        curStates.language = (current == inputSource.korean1) and " 🇰🇷 가나다1 " or " 🇰🇷 가나다2 "
+        if cur ~= "kor" then
+            ModeManager.switch("kor", { silent = false })
+        end
     elseif current == inputSource.english then
-        curStates.language = ' 🇺🇸 ABC '
+        curStates.language = " 🇺🇸 ABC "
+        if cur ~= "eng" then
+            ModeManager.switch("eng", { silent = false })
+        end
     else
         curStates.language = current
     end
-
-    -- 현재 상태를 메세지 박스로 출력
-    alter_CurStates()
 end
 
---• 입력 소스 변경 감지:
---• 입력 소스가 변경될 때마다 IM_alert 함수를 호출하여 알림을 표시합니다.
 hs.keycodes.inputSourceChanged(IM_alert)
 
--- 영문 입력 상태로 변경
+-------------------------------------------------------------------------
+-- 기존 전역 함수 인터페이스 유지 (내부는 모두 ModeManager로 위임)
+-------------------------------------------------------------------------
+
+-- 영문 입력 상태로 변경 (다른 모든 특수 모드 자동 종료)
 change_eng = function()
-    -- 커서모드 해제 
-    disableCursorMode()
-
-    -- 영문으로 변경
-    hs.keycodes.currentSourceID(inputSource.english)
-    curStates.language = ' 🇺🇸 ABC '
-
-    -- bar  -- 영문 상태를 표시
-    -- enable_munebar_show(GREEN)
-
+    ModeManager.switch("eng", { force = true })
 end
 
-
-
--- 커서모드 변경 없이 영문으로 변경
-change_eng_withoutCursorModeChange = function()
-    hs.keycodes.currentSourceID(inputSource.english)
-    curStates.language = ' 🇺🇸 ABC '
-end
-
-
--- 커서모드 변경 없이 영문으로 변경
-change_kor_withoutCursorModeChange = function()
-    hs.keycodes.currentSourceID(inputSource.korean1)
-    curStates.language = ' 🇰🇷 가나다1 '
-end
-
--- 한글 입력 상태로 변경
-change_kor_org = function()
-    -- ! 가끔씩 한글로 바뀌었다고 나오지만 한글로 안바뀌는 경우가 있음... 영문키를 다시 눌러주고 하면 되는것 같기도 하고...
-    -- change_eng()
-
-    -- 커서모드 해제
-    disableCursorMode()
-
-    -- 한글로 변경
-    change_kor_withoutCursorModeChange()
-
-    -- bar  -- 한글 상태를 표시
-    enable_munebar_show(BLUE)
-
-end
-
-
--- 한글 입력 상태로 변경
+-- 한글 입력 상태로 변경 (다른 모든 특수 모드 자동 종료)
 change_kor = function()
-    change_eng_withoutCursorModeChange()
-    change_kor_withoutCursorModeChange()
-    change_eng_withoutCursorModeChange()
-    change_kor_withoutCursorModeChange()
-    change_eng_withoutCursorModeChange()
-    change_kor_org()
-
+    ModeManager.switch("kor", { force = true })
 end
 
--- 언어를 변경 
+-- 한/영 토글
 local change_lang = function()
-    -- print( "change_lang" .. tostring(cursorMode) )
-    local current = hs.keycodes.currentSourceID()
-    if current == inputSource.korean1 then
+    if ModeManager.isMode("kor") then
         change_eng()
-    elseif current == inputSource.korean2 then
-        change_eng()
-    elseif current == inputSource.english then
-        change_kor()
     else
-        curStates.language = current
+        change_kor()
     end
 end
-
-
--- hs.hotkey.bind({}, "f17", change_eng)
--- hs.hotkey.bind({}, "f18", change_kor)
-
---------------------------------------------------------------------------------
-
---hs.keycodes.inputSourceChanged(show_autohide)
-
-
-
-
--- TODO  임시로 막아 놓음 
--- -- shift + space 
---hs.hotkey.bind({"shift"}, "space", function()
-    --toggleCursorMode()
-    --change_eng()
-
-    --change_lang()
-
-    -- 페러럴 용 한영키 변경
-    --fastKeyStroke({},"F19")
---end)

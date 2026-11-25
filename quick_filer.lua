@@ -46,6 +46,7 @@ end
 function M.loadConfig()
     destinations = {}
     destOrder = {}
+
     -- 리로드 시 기본값 초기화
     showNotification = true
     useParentBaseDir = false
@@ -186,7 +187,7 @@ local function getSelectedFiles()
     hs.pasteboard.clearContents()
     hs.eventtap.keyStroke({"cmd"}, "c", 0)
     hs.timer.usleep(100000)
-    
+
     local urls = hs.pasteboard.readURL()
     if urls then
         if type(urls) == "table" then
@@ -325,7 +326,7 @@ local function closeOverlay()
     end
 end
 
--- 6. 오버레이 표시 (mode: "move", "copy", 또는 "view"(단순 조회용))
+-- 6. 오버레이 표시 (mode: "move", "copy", 또는 "view")
 local function showDestinationOverlay(mode, files)
     closeOverlay()
     if not M.loadConfig() then return end
@@ -445,10 +446,9 @@ local function showDestinationOverlay(mode, files)
     overlayKeyTap:start()
 end
 
--- 트리거 함수 (rawDestPath가 전달되면 오버레이 없이 즉시 실행)
+-- 트리거 함수
 function M.trigger(mode, rawDestPath)
     hs.timer.doAfter(0, function()
-        -- 실행 시점마다 최신 INI 설정(플래그 포함) 반영
         M.loadConfig()
         local files = getSelectedFiles()
         if #files == 0 then
@@ -466,17 +466,33 @@ function M.trigger(mode, rawDestPath)
     end)
 end
 
--- 모드 전환 함수
-function M.toggleMode()
-    isFileManageMode = not isFileManageMode
+-- 모드 진입/종료 내부 핸들러 (ModeManager가 호출)
+local function enterFileManageMode()
+    isFileManageMode = true
+    if curStates then curStates.fileManageMode = true end
     closeOverlay()
-    if isFileManageMode then
-        M.loadConfig()
-        hs.alert.show("🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [m]: 목록", 2.0)
-        enable_munebar_show(BROWN)
+    M.loadConfig()
+end
+
+local function exitFileManageMode()
+    isFileManageMode = false
+    if curStates then curStates.fileManageMode = false end
+    closeOverlay()
+end
+
+-- 모드 전환 함수 (ModeManager에 위임)
+function M.toggleMode()
+    if ModeManager then
+        ModeManager.toggle("filer")
     else
-        hs.alert.show("⚪️ 일반 상태 (파일 관리 모드 OFF)", 1.5)
-        disable_menubar_show()
+        -- ModeManager 미사용 환경 폴백
+        if isFileManageMode then
+            exitFileManageMode()
+            disable_menubar_show()
+        else
+            enterFileManageMode()
+            enable_menubar_show(BROWN)
+        end
     end
 end
 
@@ -525,7 +541,6 @@ function M.openLastFolderInFinder()
     hs.timer.doAfter(0, function()
         local targetDir = lastSelectedDir
 
-        -- lastSelectedDir가 비어있다면 undoStack의 마지막 이력에서 추출
         if not targetDir and #undoStack > 0 then
             local lastItem = undoStack[#undoStack].items[1]
             if lastItem and lastItem.src then
@@ -542,9 +557,23 @@ function M.openLastFolderInFinder()
     end)
 end
 
--- 7. OS 저수준 전역 단축키 바인딩
+-- 7. 초기화: ModeManager 등록 및 OS 저수준 전역 단축키 바인딩
 function M.init()
     M.loadConfig()
+
+    -- ModeManager에 "filer" 모드 등록
+    if ModeManager then
+        ModeManager.register("filer", {
+            label = "File Manage 🇺🇸 ABC",
+            color = BROWN,
+            forceEnglish = true,
+            alertMessage = "🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [m]: 목록",
+            alertDuration = 2.0,
+            onEnter = enterFileManageMode,
+            onExit = exitFileManageMode,
+        })
+    end
+
     if globalHotkeyTap then
         globalHotkeyTap:stop()
     end
@@ -555,7 +584,7 @@ function M.init()
         local flags = event:getFlags()
         local keyCode = event:getKeyCode()
 
-        -- [A] Cmd + Ctrl + Alt + F13 : 파일 관리 모드 <-> 일반 상태 토글
+        -- [A] Cmd + Alt + F13 : 파일 관리 모드 <-> 영문 모드 토글
         if flags.cmd and not flags.ctrl and flags.alt and not flags.shift and keyCode == 105 then
             hs.timer.doAfter(0, function() M.toggleMode() end)
             return true
@@ -593,7 +622,6 @@ function M.init()
                 return true
             end
 
-            -- 'p' 단독 입력 -> 마지막 선택되었던 파일의 폴더를 Finder에서 열기
             if keyCode == hs.keycodes.map["p"] and not flags.shift then
                 M.openLastFolderInFinder()
                 return true
@@ -614,7 +642,6 @@ function M.init()
                 return true
             end
 
-            -- INI에 설정된 목적지 키 매칭
             local baseChar = getBaseCharFromKeyCode(keyCode)
             if baseChar and destinations[baseChar] then
                 local targetRaw = destinations[baseChar]

@@ -2,10 +2,8 @@ curStates.keypad_Mode = false
 local activeBindings = {}
 
 -------------------------------------------------------------------------
--- 단일 키 맵핑 설정
--- Key mappings for cursor mode
+-- 단일 키 맵핑 설정 (Keypad Mode)
 local keyMappings = {
-
     {t="key", from = {{},"n"}, to = {{},"0"}},
     {t="key", from = {{},"m"}, to = {{},"1"}},
     {t="key", from = {{},","}, to = {{},"2"}},
@@ -17,101 +15,78 @@ local keyMappings = {
     {t="key", from = {{},"i"}, to = {{},"8"}},
     {t="key", from = {{},"o"}, to = {{},"9"}},
 
-    {t="key", from = {{},"y"}, to = {{"shift"},"="}}, -- ++*===============/////////////////////////
+    {t="key", from = {{},"y"}, to = {{"shift"},"="}}, -- +
     {t="key", from = {{},"h"}, to = {{},"-"}},
-    {t="key", from = {{},"p"}, to = {{"shift"},"8"}}, -- *
-    {t="key", from = {{},"["}, to = {{},"="}},
-    --{t="key", from = {{},"/"}, to = {{},"="}},
+    {t="key", from = {{},"t"}, to = {{"shift"},"8"}}, -- *
+    {t="key", from = {{},"g"}, to = {{},"/"}},
 
-    {t="key", from = {{},";"}, to = {{},"delete"}},         -- delete ⬅️
-    {t="key", from = {{},"'"}, to = {{},"forwarddelete"}},  -- forward delete ➡️
-
-
-    -- {t="fnc", from = {{},"p"}, to = function() -- ctrl + c
-    --     fastKeyStroke(mod.cmd, "c") 
-    -- end},     
-    -- {t="fnc", from = {{"shift"},"p"}, to = function() -- ctrl + v 
-    --     fastKeyStroke(mod.cmd, "v") 
-    -- end}, 
-
+    {t="key", from = {{},"p"}, to = {{},"delete"}},         -- delete ⬅️
+    {t="key", from = {{},"["}, to = {{},"forwarddelete"}},  -- forward delete ➡️
+    -- {t="key", from = {{},"]"}, to = {{},"="}},
 
     {t="key", from = {{"cmd"},"j"}, to = {{},"left"}},
     {t="key", from = {{"cmd"},"l"}, to = {{},"right"}},
     {t="key", from = {{"cmd"},"i"}, to = {{},"up"}},
     {t="key", from = {{"cmd"},"k"}, to = {{},"down"}},
-
 }
 
-
 ------------------------------------------------------------------------
--- vim 모드 토클
+-- 내부 키 바인딩 활성화 / 비활성화 (다른 모드에 대한 의존성 제거)
 
 local function loadMode()
-    -- print ( "loadMode"  )
-
-    loadKeyBinding( keyMappings , activeBindings )
-
---    table.insert(activeBindings, u_with_other_bind)
---    table.insert(activeBindings, i_with_other_bind)
---    table.insert(activeBindings, o_with_other_bind)
-
+    loadKeyBinding(keyMappings, activeBindings)
 end
 
--- Function to enable cursor mode key mappings
-function enableMode_Keypad()
+local function enterKeypadMode()
     curStates.keypad_Mode = true
-
-    enable_munebar_show(GREEN)
-
     for _, bind in ipairs(activeBindings) do
         bind:enable()
-    end   
-
-    -- 영문 입력 모드로 변경
-    change_eng_withoutCursorModeChange()
+    end
 end
 
--- Function to disable cursor mode key mappings
-function disableMode_Keypad()
+local function exitKeypadMode()
     curStates.keypad_Mode = false
-    
-    disable_menubar_show()
-
     for _, bind in ipairs(activeBindings) do
         bind:disable()
-        --bind:delete()
     end
 end
 
+------------------------------------------------------------------------
+-- ModeManager 등록 ("keypad")
+
+ModeManager.register("keypad", {
+    label = "Keypad 🇺🇸 ABC",
+    color = GREEN,
+    forceEnglish = true, -- 진입 시 영문 입력기 자동 전환
+    onEnter = enterKeypadMode,
+    onExit = exitKeypadMode,
+})
+
+------------------------------------------------------------------------
+-- 기존 전역 함수 호환 유지 (외부에서 직접 호출 시에도 ModeManager 경유)
+
+function enableMode_Keypad()
+    ModeManager.switch("keypad")
+end
+
+function disableMode_Keypad()
+    if ModeManager.isMode("keypad") then
+        ModeManager.switch("eng", { force = true })
+    else
+        exitKeypadMode()
+    end
+end
 
 local function toggleMode_Keypad()
-    print ( "toggleCursorMode"  )
-    -- print( curStates.cursorMode )
-    disableCursorMode()
-
-    if not curStates.keypad_Mode then
-        enableMode_Keypad()
-    else
-        disableMode_Keypad()
-    end
-
-    -- 현재 상태를 메세지 박스로 출력
-    alter_CurStates()
+    ModeManager.toggle("keypad")
 end
 
-
-
 -------------------------------------------------------------------------
--- vim 키 기능 실행
+-- 단축키 바인딩 및 초기화
 
--- (PRE) karabiner에서 caplock 를 f13로 사전 맵핑 시켜 놓았음 
+-- (PRE) karabiner에서 capslock을 f13으로 사전 매핑
 hs.hotkey.bind({"shift"}, "f13", toggleMode_Keypad)
 hs.hotkey.bind({}, "f15", toggleMode_Keypad)
 
--- Initialize by disabling cursor mode
 loadMode()
-disableMode_Keypad()
-
-
---------------------------------------------------------------------------------
-
+exitKeypadMode()
