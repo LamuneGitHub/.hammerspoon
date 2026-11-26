@@ -19,7 +19,7 @@ local overlayKeyTap = nil      -- 오버레이 전용 키 이벤트 가로채기
 local globalHotkeyTap = nil    -- 전역 키 이벤트 가로채기 객체
 
 -- =========================================================================
--- 1. INI 설정 파일 열기 및 로드
+-- 1. INI 설정 파일 열기, 로드 및 옵션 저장
 -- =========================================================================
 
 -- 설정 파일(quick_filer.ini)을 기본 편집기로 열기 (파일이 없으면 기본 템플릿 생성)
@@ -101,6 +101,79 @@ function M.loadConfig()
     end
     file:close()
     return true
+end
+
+-- INI 파일 내 [Settings] 섹션의 불리언 설정값을 갱신하고 저장하는 공통 헬퍼
+local function updateIniBooleanSetting(keyName, newValue)
+    local valueStr = newValue and "true" or "false"
+    local keyLowerTarget = keyName:lower()
+
+    local file = io.open(iniPath, "r")
+    if not file then
+        return false
+    end
+
+    local lines = {}
+    local inSettings = false
+    local updated = false
+
+    for line in file:lines() do
+        local trimmed = line:match("^%s*(.-)%s*$")
+        local section = trimmed:match("^%[(.-)%]$")
+        if section then
+            inSettings = (section == "Settings")
+            table.insert(lines, line)
+        elseif inSettings and not trimmed:match("^//") then
+            local k = trimmed:match("^(.-)%s*=")
+            if k and k:lower() == keyLowerTarget then
+                table.insert(lines, keyName .. " = " .. valueStr)
+                updated = true
+            else
+                table.insert(lines, line)
+            end
+        else
+            table.insert(lines, line)
+        end
+    end
+    file:close()
+
+    -- 기존 INI에 해당 항목이 없었다면 [Settings] 하단에 추가
+    if not updated then
+        if not inSettings then
+            table.insert(lines, "")
+            table.insert(lines, "[Settings]")
+        end
+        table.insert(lines, keyName .. " = " .. valueStr)
+    end
+
+    local out = io.open(iniPath, "w")
+    if out then
+        out:write(table.concat(lines, "\n") .. "\n")
+        out:close()
+        return true
+    end
+    return false
+end
+
+-- INI 파일 내 useRootBaseDir 값을 즉시 토글하고 파일에 반영 (F10)
+local function toggleUseRootBaseDir()
+    local newValue = not useRootBaseDir
+    useRootBaseDir = newValue
+    updateIniBooleanSetting("useRootBaseDir", newValue)
+
+    local statusMsg = newValue
+        and ("ON (" .. (rootBaseDir ~= "" and rootBaseDir or "경로 미지정") .. ")")
+        or "OFF"
+    hs.alert.show("useRootBaseDir: " .. statusMsg, 1.0)
+end
+
+-- INI 파일 내 useParentBaseDir 값을 즉시 토글하고 파일에 반영 (F11)
+local function toggleUseParentBaseDir()
+    local newValue = not useParentBaseDir
+    useParentBaseDir = newValue
+    updateIniBooleanSetting("useParentBaseDir", newValue)
+
+    hs.alert.show("useParentBaseDir: " .. (newValue and "ON (부모 폴더 기준)" or "OFF (현재 폴더 기준)"), 1.0)
 end
 
 -- =========================================================================
@@ -353,9 +426,9 @@ local function showDestinationOverlay(mode, files)
 
     local screen = hs.screen.mainScreen():frame()
     local rowHeight = 30
-    local headerHeight = 55
+    local headerHeight = 92
     local footerHeight = 35
-    local width = 580
+    local width = 660
     local height = headerHeight + (#destOrder * rowHeight) + footerHeight
 
     overlayCanvas = hs.canvas.new({
@@ -399,11 +472,45 @@ local function showDestinationOverlay(mode, files)
         text = titleText,
         textSize = 15,
         textColor = { white = 1.0, alpha = 1.0 },
-        frame = { x = 20, y = 15, w = width - 40, h = 25 }
+        frame = { x = 20, y = 14, w = width - 40, h = 24 }
+    }
+
+    -- useRootBaseDir 현재 상태 표시 (F10으로 즉시 토글 가능, 최우선 적용)
+    local rootDirStatusText = useRootBaseDir
+        and string.format("[F10] 루트 폴더 사용 (useRootBaseDir = ON: %s)", rootBaseDir ~= "" and rootBaseDir or "미지정")
+        or "[F10] 루트 폴더 사용 (useRootBaseDir = OFF)"
+    local rootDirStatusColor = useRootBaseDir
+        and { red = 0.4, green = 0.85, blue = 1.0, alpha = 1.0 }
+        or { white = 0.65, alpha = 0.85 }
+
+    overlayCanvas[4] = {
+        type = "text",
+        text = rootDirStatusText,
+        textSize = 12,
+        textFont = "Menlo",
+        textColor = rootDirStatusColor,
+        frame = { x = 20, y = 40, w = width - 40, h = 18 }
+    }
+
+    -- useParentBaseDir 현재 상태 표시 (F11로 즉시 토글 가능)
+    local parentDirStatusText = useParentBaseDir
+        and "[F11] 부모 폴더 사용 (useParentBaseDir = ON)"
+        or "[F11] 부모 폴더 사용 (useParentBaseDir = OFF)"
+    local parentDirStatusColor = useParentBaseDir
+        and { red = 0.4, green = 0.9, blue = 0.55, alpha = 1.0 }
+        or { white = 0.65, alpha = 0.85 }
+
+    overlayCanvas[5] = {
+        type = "text",
+        text = parentDirStatusText,
+        textSize = 12,
+        textFont = "Menlo",
+        textColor = parentDirStatusColor,
+        frame = { x = 20, y = 60, w = width - 40, h = 18 }
     }
 
     -- INI에 정의된 목적지 단축키 목록 렌더링
-    local idx = 4
+    local idx = 6
     for i, item in ipairs(destOrder) do
         local yPos = headerHeight + (i - 1) * rowHeight
         overlayCanvas[idx] = {
@@ -429,7 +536,7 @@ local function showDestinationOverlay(mode, files)
     -- 하단 조작 안내 문구
     overlayCanvas[idx] = {
         type = "text",
-        text = "ESC / Enter / F12 / Cmd+Ctrl+/: 닫기   |   [m]: 설정 파일(INI) 편집",
+        text = "ESC/Enter/F12/Cmd+Ctrl+/: 닫기 | [F10]: 루트폴더 | [F11]: 부모폴더 | [m]: INI 편집",
         textSize = 11,
         textColor = { white = 0.65, alpha = 0.9 },
         frame = { x = 20, y = height - 26, w = width - 40, h = 20 }
@@ -461,6 +568,16 @@ local function showDestinationOverlay(mode, files)
         -- [닫기] Cmd + Ctrl + /
         elseif flags.cmd and flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["/"] then
             closeOverlay()
+            return true
+        -- [옵션 토글] F10 키 : useRootBaseDir 즉시 토글 후 오버레이 화면 갱신
+        elseif not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["f10"] then
+            toggleUseRootBaseDir()
+            showDestinationOverlay(mode, files)
+            return true
+        -- [옵션 토글] F11 키 : useParentBaseDir 즉시 토글 후 오버레이 화면 갱신
+        elseif not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["f11"] then
+            toggleUseParentBaseDir()
+            showDestinationOverlay(mode, files)
             return true
         -- [설정 편집] 단독 m 키 (모든 오버레이 모드에서 INI 설정 파일 열기)
         elseif not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["m"] then
@@ -617,7 +734,7 @@ function M.init()
             label = "File Manage 🇺🇸 ABC",
             color = BROWN,
             forceEnglish = true,
-            alertMessage = "🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [F12 / Cmd+Ctrl+/]: 목적 폴더 선택",
+            alertMessage = "🟢 파일 관리 모드 ON\n[키]: 이동 | [Shift+키]: 복사 | [/]: 삭제 | [F12]: 목적 폴더 | [ESC]: 종료",
             alertDuration = 2.0,
             onEnter = enterFileManageMode,
             onExit = exitFileManageMode,
@@ -677,6 +794,11 @@ function M.init()
         -- -----------------------------------------------------------------
         -- [C] "파일 관리 모드" 활성화 시 단독 키 처리
         -- -----------------------------------------------------------------
+
+        -- ESC : 파일 관리 모드 종료 (오버레이가 닫혀 있을 때만 동작)
+        elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["escape"] then
+            hs.timer.doAfter(0, function() M.toggleMode() end)
+            return true
 
         -- F12 : 목적 폴더 선택 화면 호출
         elseif isFileManageMode and not flags.cmd and not flags.ctrl and not flags.alt and not flags.shift and keyCode == hs.keycodes.map["f12"] then

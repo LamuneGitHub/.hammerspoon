@@ -510,7 +510,7 @@ end
 
 -- 시스템 기본 경고음을 재생하여 알람 소리를 내는 함수
 function playAlarmSound()
-    local sound = hs.sound.getByName("Glass")
+    local sound = hs.sound.getByName("Blow")
     if sound then
         sound:play()
         print("[알람] 알람 사운드 재생 완료")
