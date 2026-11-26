@@ -1,9 +1,36 @@
+--[[
+[프로그램 목적 및 핵심 기능 요약]
+Hammerspoon에서 키보드 중심의 커서 이동·편집 모드(Cursor Mode)를 제공하는 모듈입니다.
+외부 설정 파일(lamune_cursor_mode.ini)은 공통 INI 유틸리티(lamune_ini.lua)를 통해 로드하며,
+이동 키 조합키 자동 생성, 기능 매핑, F12 설정 오버레이 화면 및 ModeManager 연동을 지원합니다.
+
+---
+# lamune_cursor_mode.lua 상세 설명
+
+## 1. 의존성
+* `lamune_ini.lua` (`~/.hammerspoon/lamune_ini.lua`에 배치)
+* `ModeManager`, `curStates`, `mod`, `fastKeyStroke`, `loadKeyBinding` 등 기존 전역 환경
+
+## 2. 주요 리팩토링 사항
+* 중복되어 있던 INI 파일 읽기 로직(`loadCursorConfig`, `parseIniForOverlay`)을 공통 모듈 `IniUtil.parse()` 호출로 통합했습니다.
+* `lamune_cursor_mode.ini`의 `#` 인라인 주석 형식을 그대로 유지하며, 오버레이 화면과 키 매핑 로딩 모두 동일한 파서를 사용합니다.
+---
+]]
+
+local IniUtil = require("lamune_ini")
 
 curStates.cursorMode = false
 local activeBindings = {}
 
 -- 외부 INI 파일 경로 (필요에 따라 경로 수정)
 local iniPath = hs.configdir .. "/lamune_cursor_mode.ini"
+
+-- Cursor Mode INI 파싱 공통 옵션 ('#' 인라인 주석 지원)
+local cursorIniOpts = {
+    commentPrefixes = { "#" },
+    inlineComments = true,
+    skipEmptyValues = true,
+}
 
 -- 오버레이 상태 변수
 local overlayCanvas = nil
@@ -72,15 +99,11 @@ local actions = {
 -------------------------------------------------------------------------
 -- INI 파싱 및 조합키 자동 생성 유틸리티
 
-local function trim(s)
-    return (s:gsub("^%s*(.-)%s*$", "%1"))
-end
-
 -- "cmd+alt+n" -> {{"cmd", "alt"}, "n"} 형태로 변환
 local function parseKeyCombo(str)
     local parts = {}
     for part in string.gmatch(str, "[^+]+") do
-        table.insert(parts, trim(part))
+        table.insert(parts, IniUtil.trim(part))
     end
     local key = table.remove(parts) -- 마지막 항목이 실제 키
     return { parts, key }
@@ -143,7 +166,7 @@ local function getComboSignature(combo)
     return table.concat(mods, "+") .. "+" .. combo[2]
 end
 
--- INI 파일 로드 및 keyMappings 생성
+-- INI 파일 로드 및 keyMappings 생성 (공통 IniUtil 사용)
 local function loadCursorConfig(path)
     local mappings = {}
     local indexByFrom = {} -- 동일한 단축키(from) 중복 등록 방지 및 덮어쓰기용
@@ -162,73 +185,55 @@ local function loadCursorConfig(path)
         end
     end
 
-    local file = io.open(path, "r")
-    if not file then
+    local iniData = IniUtil.parse(path, cursorIniOpts)
+    if not iniData then
         hs.alert.show("Cursor Mode INI 파일을 찾을 수 없습니다:\n" .. path)
         return mappings, toggleCombo
     end
 
-    local section = nil
-    for line in file:lines() do
-        -- # 이후의 주석 제거 및 앞뒤 공백 정리
-        line = trim(line:gsub("#.*$", ""))
+    -- [Settings] 토글 단축키 로드
+    if iniData.map.Settings and iniData.map.Settings["toggle_key"] then
+        toggleCombo = parseKeyCombo(iniData.map.Settings["toggle_key"])
+    end
 
-        if line ~= "" then
-            local sec = line:match("^%[(.-)%]$")
-            if sec then
-                section = sec
-            else
-                local k, v = line:match("^(.-)=(.*)$")
-                if k and v then
-                    k, v = trim(k), trim(v)
+    -- [NavMappings] 이동/삭제 키: 기본 키 + 모든 조합키 자동 생성
+    for _, entry in ipairs(iniData.sections.NavMappings or {}) do
+        local fromBase = parseKeyCombo(entry.value)
+        local toBase = parseKeyCombo(entry.key)
 
-                    -- 값이 비어 있으면 바인딩 생략
-                    if v ~= "" then
-                        if section == "Settings" and k == "toggle_key" then
-                            toggleCombo = parseKeyCombo(v)
-
-                        elseif section == "NavMappings" then
-                            -- 이동/삭제 키: 기본 키 + 모든 조합키 자동 생성
-                            local fromBase = parseKeyCombo(v)
-                            local toBase = parseKeyCombo(k)
-
-                            for _, mods in ipairs(navModifierCombos) do
-                                if not hasOverlappingMod(fromBase[1], mods) then
-                                    addMapping({
-                                        t = "key",
-                                        from = { mergeMods(fromBase[1], mods), fromBase[2] },
-                                        to   = { mergeMods(toBase[1], mods),   toBase[2] }
-                                    })
-                                end
-                            end
-
-                        elseif section == "KeyMappings" then
-                            -- 기능(to) = 단축키(from)
-                            addMapping({
-                                t = "key",
-                                from = parseKeyCombo(v),
-                                to = parseKeyCombo(k)
-                            })
-
-                        elseif section == "FunctionMappings" then
-                            -- 액션명(to) = 단축키(from)
-                            if actions[k] then
-                                addMapping({
-                                    t = "fnc",
-                                    from = parseKeyCombo(v),
-                                    to = actions[k]
-                                })
-                            else
-                                print("[CursorMode] 알 수 없는 액션: " .. k)
-                            end
-                        end
-                    end
-                end
+        for _, mods in ipairs(navModifierCombos) do
+            if not hasOverlappingMod(fromBase[1], mods) then
+                addMapping({
+                    t = "key",
+                    from = { mergeMods(fromBase[1], mods), fromBase[2] },
+                    to   = { mergeMods(toBase[1], mods),   toBase[2] }
+                })
             end
         end
     end
 
-    file:close()
+    -- [KeyMappings] 기능(to) = 단축키(from)
+    for _, entry in ipairs(iniData.sections.KeyMappings or {}) do
+        addMapping({
+            t = "key",
+            from = parseKeyCombo(entry.value),
+            to = parseKeyCombo(entry.key)
+        })
+    end
+
+    -- [FunctionMappings] 액션명(to) = 단축키(from)
+    for _, entry in ipairs(iniData.sections.FunctionMappings or {}) do
+        if actions[entry.key] then
+            addMapping({
+                t = "fnc",
+                from = parseKeyCombo(entry.value),
+                to = actions[entry.key]
+            })
+        else
+            print("[CursorMode] 알 수 없는 액션: " .. entry.key)
+        end
+    end
+
     return mappings, toggleCombo
 end
 
@@ -244,8 +249,13 @@ local function openCursorConfig()
     hs.execute(string.format('open %q', iniPath))
 end
 
--- 오버레이 표시용 INI 파싱 (섹션별 항목 + 인라인 주석 추출)
+-- 오버레이 표시용 INI 파싱 (공통 IniUtil 사용 후 오버레이 표시 포맷으로 변환)
 local function parseIniForOverlay(path)
+    local iniData = IniUtil.parse(path, cursorIniOpts)
+    if not iniData then
+        return nil
+    end
+
     local sections = {
         Settings = {},
         NavMappings = {},
@@ -253,45 +263,17 @@ local function parseIniForOverlay(path)
         FunctionMappings = {},
     }
 
-    local file = io.open(path, "r")
-    if not file then
-        return nil
-    end
-
-    local currentSection = nil
-    for rawLine in file:lines() do
-        local body, comment = rawLine:match("^(.-)#(.*)$")
-        if not body then
-            body = rawLine
-            comment = ""
-        end
-        body = trim(body)
-        comment = trim(comment)
-
-        if body ~= "" then
-            local sec = body:match("^%[(.-)%]$")
-            if sec then
-                currentSection = sec
-                if not sections[currentSection] then
-                    sections[currentSection] = {}
-                end
-            elseif currentSection then
-                local k, v = body:match("^(.-)=(.*)$")
-                if k and v then
-                    k, v = trim(k), trim(v)
-                    if v ~= "" then
-                        table.insert(sections[currentSection], {
-                            action = k,
-                            shortcut = v,
-                            comment = comment,
-                        })
-                    end
-                end
-            end
+    for secName, entries in pairs(iniData.sections) do
+        sections[secName] = {}
+        for _, entry in ipairs(entries) do
+            table.insert(sections[secName], {
+                action = entry.key,
+                shortcut = entry.value,
+                comment = entry.comment,
+            })
         end
     end
 
-    file:close()
     return sections
 end
 

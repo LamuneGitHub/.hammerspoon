@@ -1,9 +1,37 @@
+--[[
+[프로그램 목적 및 핵심 기능 요약]
+Finder, qView 등 macOS 앱에서 선택·열람 중인 파일을 단축키와 오버레이 화면으로
+빠르게 이동·복사·삭제·실행 취소(Undo)할 수 있는 Hammerspoon 파일 관리 모듈입니다.
+외부 설정 파일(quick_filer.ini) 읽기 및 불리언 옵션 저장을 공통 INI 유틸리티(lamune_ini.lua)로 통합했습니다.
+
+---
+# quick_filer.lua 상세 설명
+
+## 1. 의존성
+* `lamune_ini.lua` (`~/.hammerspoon/lamune_ini.lua`에 배치)
+* 선택 사항: `ModeManager`, `curStates`, `BROWN` (미사용 환경 폴백 지원)
+
+## 2. 주요 리팩토링 사항
+* `M.loadConfig()`의 파일 파싱 로직을 `IniUtil.parse()` 호출로 대체했습니다.
+* `updateIniBooleanSetting()`의 파일 수정 로직을 `IniUtil.updateKey()` 호출로 대체했습니다.
+* 기존 `quick_filer.ini`의 `//` 주석 규칙과 모든 기존 주석/기능을 그대로 유지합니다.
+---
+]]
+
+local IniUtil = require("lamune_ini")
+
 local M = {}
 
 -- =========================================================================
 -- 전역 상태 및 설정 변수
 -- =========================================================================
 local iniPath = os.getenv("HOME") .. "/.hammerspoon/quick_filer.ini"
+local quickFilerIniOpts = {
+    commentPrefixes = { "//" },
+    inlineComments = false, -- 경로에 '#' 등이 포함될 수 있으므로 '//' 줄 주석만 무시
+    skipEmptyValues = true,
+}
+
 local destinations = {}       -- 단축키(문자) -> 목적지 경로 매핑 테이블
 local destOrder = {}          -- 오버레이에 표시할 목적지 순서 유지용 배열
 local showNotification = true -- 작업 완료 후 알림 표시 여부
@@ -49,7 +77,7 @@ rootBaseDir = ~/Downloads
     hs.execute(string.format('open %q', iniPath))
 end
 
--- INI 파일 파싱 및 내부 설정 갱신
+-- INI 파일 파싱 및 내부 설정 갱신 (공통 IniUtil 사용)
 function M.loadConfig()
     destinations = {}
     destOrder = {}
@@ -60,99 +88,41 @@ function M.loadConfig()
     useRootBaseDir = false
     rootBaseDir = ""
 
-    local file = io.open(iniPath, "r")
-    if not file then
+    local iniData = IniUtil.parse(iniPath, quickFilerIniOpts)
+    if not iniData then
         hs.alert.show("quick_filer.ini 파일을 찾을 수 없습니다. 생성 후 엽니다.")
         M.openConfig()
         return false
     end
 
-    local currentSection = ""
-    for line in file:lines() do
-        line = line:match("^%s*(.-)%s*$")
-        -- '//'로 시작하는 줄만 주석으로 무시
-        if line ~= "" and not line:match("^//") then
-            local section = line:match("^%[(.-)%]$")
-            if section then
-                currentSection = section
-            elseif currentSection == "Destinations" then
-                local k, v = line:match("^(.-)%s*=%s*(.+)$")
-                if k and v then
-                    k = k:lower()
-                    destinations[k] = v
-                    table.insert(destOrder, { key = k, path = v })
-                end
-            elseif currentSection == "Settings" then
-                local k, v = line:match("^(.-)%s*=%s*(.+)$")
-                if k and v then
-                    local keyLower = k:lower()
-                    if keyLower == "show_notification" then
-                        showNotification = (v:lower() == "true")
-                    elseif keyLower == "useparentbasedir" then
-                        useParentBaseDir = (v:lower() == "true")
-                    elseif keyLower == "userootbasedir" then
-                        useRootBaseDir = (v:lower() == "true")
-                    elseif keyLower == "rootbasedir" then
-                        rootBaseDir = v
-                    end
-                end
-            end
-        end
+    -- [Destinations] 섹션 로드 (파일에 적힌 순서 유지)
+    for _, entry in ipairs(iniData.sections.Destinations or {}) do
+        local k = entry.key:lower()
+        destinations[k] = entry.value
+        table.insert(destOrder, { key = k, path = entry.value })
     end
-    file:close()
+
+    -- [Settings] 섹션 로드 (대소문자 무시 조회)
+    local settingsMap = iniData.map.Settings or {}
+    if settingsMap["show_notification"] ~= nil then
+        showNotification = (settingsMap["show_notification"]:lower() == "true")
+    end
+    if settingsMap["useparentbasedir"] ~= nil then
+        useParentBaseDir = (settingsMap["useparentbasedir"]:lower() == "true")
+    end
+    if settingsMap["userootbasedir"] ~= nil then
+        useRootBaseDir = (settingsMap["userootbasedir"]:lower() == "true")
+    end
+    if settingsMap["rootbasedir"] ~= nil then
+        rootBaseDir = settingsMap["rootbasedir"]
+    end
+
     return true
 end
 
 -- INI 파일 내 [Settings] 섹션의 불리언 설정값을 갱신하고 저장하는 공통 헬퍼
 local function updateIniBooleanSetting(keyName, newValue)
-    local valueStr = newValue and "true" or "false"
-    local keyLowerTarget = keyName:lower()
-
-    local file = io.open(iniPath, "r")
-    if not file then
-        return false
-    end
-
-    local lines = {}
-    local inSettings = false
-    local updated = false
-
-    for line in file:lines() do
-        local trimmed = line:match("^%s*(.-)%s*$")
-        local section = trimmed:match("^%[(.-)%]$")
-        if section then
-            inSettings = (section == "Settings")
-            table.insert(lines, line)
-        elseif inSettings and not trimmed:match("^//") then
-            local k = trimmed:match("^(.-)%s*=")
-            if k and k:lower() == keyLowerTarget then
-                table.insert(lines, keyName .. " = " .. valueStr)
-                updated = true
-            else
-                table.insert(lines, line)
-            end
-        else
-            table.insert(lines, line)
-        end
-    end
-    file:close()
-
-    -- 기존 INI에 해당 항목이 없었다면 [Settings] 하단에 추가
-    if not updated then
-        if not inSettings then
-            table.insert(lines, "")
-            table.insert(lines, "[Settings]")
-        end
-        table.insert(lines, keyName .. " = " .. valueStr)
-    end
-
-    local out = io.open(iniPath, "w")
-    if out then
-        out:write(table.concat(lines, "\n") .. "\n")
-        out:close()
-        return true
-    end
-    return false
+    return IniUtil.updateKey(iniPath, "Settings", keyName, newValue, quickFilerIniOpts)
 end
 
 -- INI 파일 내 useRootBaseDir 값을 즉시 토글하고 파일에 반영 (F10)

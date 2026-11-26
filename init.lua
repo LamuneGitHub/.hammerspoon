@@ -4,6 +4,7 @@ hs.dockicon.hide() -- Dock 아이콘은 숨기되 macOS WindowServer에 일반 �
 -- 1. 공용 유틸 및 중앙 모드 관리자 로드 (반드시 다른 모드들보다 먼저 로드)
 ------------------------------------------------------------------
 require('lamune_common')                 -- 공용기능 정의
+require('lamune_ini')                    -- ini 관리자
 ModeManager = require('mode_manager')    -- 중앙 모드 관리자
 
 ------------------------------------------------------------------
